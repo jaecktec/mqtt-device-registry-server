@@ -1,0 +1,16 @@
+{
+  "name": "mqtt_device_registry",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "--harmony start.es6"
+  },
+  "dependencies": {
+    "amqplib": "^0.4.2",
+    "co": "^4.6.0",
+    "debug": "~2.2.0",
+    "mongodb": "^2.2.8",
+    "mongoose": "^4.5.10"
+  },
+  "plugins": []
+}
