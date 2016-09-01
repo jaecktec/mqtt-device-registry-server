@@ -90,6 +90,12 @@ class NodeService {
         })(this, msg, channel);
     }
 
+    /**
+     * Creates a new Device
+     * @param msg amqp message
+     * @returns {*} promise
+     * @private
+     */
     __createDevice(msg) {
         return co.wrap(function*(_this, msg) {
             let msgObj = JSON.parse(msg.content.toString('ascii'));
@@ -106,6 +112,12 @@ class NodeService {
         })(this, msg);
     }
 
+    /**
+     * Updates existing device
+     * @param msg amqp message
+     * @returns {*} promise
+     * @private
+     */
     __refreshDevice(msg) {
         return co.wrap(function*(_this, msg) {
             let msgObj = JSON.parse(msg.content.toString('ascii'));
