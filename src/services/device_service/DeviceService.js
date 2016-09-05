@@ -1,20 +1,18 @@
-const assert = require('assert');
+const debug = require('debug')('mqtt-device-registry.test.DeviceService');
 var co = require('co');
 var amqp = require('amqplib');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
 const NodeServiceQueue = require("./constants/DeviceServiceQueue");
-const AmqpExchanges = require("../../bin/constants/AmqpExchanges");
+const AmqpExchanges = require("../../constants/AmqpExchanges");
+const AmqpHelper = require("../../helper/AmqpHelper");
+const MqttGatewayRoutingKey = require("../mqtt_gateway/constants/MqttGatewayRoutingKey");
+const DeviceServiceRoutingKey = require("./constants/DeviceServiceRoutingKey");
 
 const DbDevice = require("./db/Device");
 
-const DEVICE_ROUTING_KEY = "dr.api.device";
-
-const ROUTING_KEY_DEVICE_CONNECT = "dr.api.device.connect";
-const ROUTING_KEY_DEVICE_UPDATE = "dr.api.device.update";
-
-class NodeService {
+class DeviceService {
 
     start(mongoUrl, amqpUrl) {
         return co.wrap(function*(_this, _mongoUrl, _amqpUrl) {
@@ -29,14 +27,14 @@ class NodeService {
 
 
             yield [
-                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, DEVICE_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.deviceConnectedQueue, AmqpExchanges.mqttGatewayExchange, ROUTING_KEY_DEVICE_CONNECT),
-                channel.bindQueue(NodeServiceQueue.deviceReconnectedQueue, AmqpExchanges.mqttGatewayExchange, ROUTING_KEY_DEVICE_UPDATE),
+                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.deviceConnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT),
+                channel.bindQueue(NodeServiceQueue.deviceReconnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE),
             ];
 
-            channel.consume(NodeServiceQueue.mainQueue, (msg)=> _this.__handleMessage(msg, channel, _this.__onDeviceMessage), {noAck: false});
-            channel.consume(NodeServiceQueue.deviceConnectedQueue, (msg)=> _this.__handleMessage(msg, channel, _this.__createDevice), {noAck: false});
-            channel.consume(NodeServiceQueue.deviceReconnectedQueue, (msg)=> _this.__handleMessage(msg, channel, _this.__refreshDevice), {noAck: false});
+            channel.consume(NodeServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onDeviceMessage), {noAck: false});
+            channel.consume(NodeServiceQueue.deviceConnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createDevice), {noAck: false});
+            channel.consume(NodeServiceQueue.deviceReconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__refreshDevice), {noAck: false});
 
             // MONGODB connect
             yield mongoose.connect(_mongoUrl);
@@ -44,22 +42,22 @@ class NodeService {
         })(this, mongoUrl, amqpUrl);
     }
 
-    /**
-     * Handling for amqp ack handling
-     * @param msg amqp message
-     * @param channel amqp channel
-     * @param handler method wich should be called. passing arg0: msg, arg1: channel
-     * @private
-     */
-    __handleMessage(msg, channel, handler) {
-        co(function *() {
-            yield handler(msg, channel);
-            channel.ack(msg);
-        }).catch((error) => {
-            console.log("__handleMessage - Error", error);
-            channel.reject(msg, true)
-        });
-    }
+    // /**
+    //  * Handling for amqp ack handling
+    //  * @param msg amqp message
+    //  * @param channel amqp channel
+    //  * @param handler method wich should be called. passing arg0: msg, arg1: channel
+    //  * @private
+    //  */
+    // __handleMessage(msg, channel, handler) {
+    //     co(function *() {
+    //         yield handler(msg, channel);
+    //         channel.ack(msg);
+    //     }).catch((error) => {
+    //         console.log("__handleMessage - Error", error);
+    //         channel.reject(msg, true)
+    //     });
+    // }
 
     /**
      * checks if device exists, if not, publishes msg to exchange with routing key:
@@ -72,19 +70,18 @@ class NodeService {
      */
     __onDeviceMessage(msg, channel) {
         return co.wrap(function*(_this, msg, channel) {
-            let msgObj = JSON.parse(msg.content.toString('ascii'));
-            console.log("__onDeviceMessage", msgObj);
+            let msgObj = AmqpHelper.bufferToObj(msg.content);
             // check if device exists:
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
             if (!device) {
                 channel.publish(
                     AmqpExchanges.mqttGatewayExchange,
-                    ROUTING_KEY_DEVICE_CONNECT,
+                    DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT,
                     new Buffer(msg.content));
             } else {
                 channel.publish(
                     AmqpExchanges.mqttGatewayExchange,
-                    ROUTING_KEY_DEVICE_UPDATE,
+                    DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE,
                     new Buffer(msg.content));
             }
         })(this, msg, channel);
@@ -98,16 +95,17 @@ class NodeService {
      */
     __createDevice(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = JSON.parse(msg.content.toString('ascii'));
-            console.log("__createDevice", msgObj);
+            let msgObj = AmqpHelper.bufferToObj(msg.content);
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
             if (!device) {
-                yield new DbDevice({
+                let newDevice = new DbDevice({
                     nodeId: msgObj.nodeId,
                     id: msgObj.id,
                     sensor: msgObj.sensor,
                     unit: msgObj.unit
-                }).save();
+                });
+                yield newDevice.save();
+                debug("New Device saved");
             }
         })(this, msg);
     }
@@ -120,8 +118,7 @@ class NodeService {
      */
     __refreshDevice(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = JSON.parse(msg.content.toString('ascii'));
-            console.log("__refreshDevice", msgObj);
+            let msgObj = AmqpHelper.bufferToObj(msg.content);
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
             device.sensor = msgObj.sensor;
             device.unit = msgObj.unit;
@@ -130,4 +127,4 @@ class NodeService {
     }
 }
 
-module.exports = new NodeService();
+module.exports = new DeviceService();

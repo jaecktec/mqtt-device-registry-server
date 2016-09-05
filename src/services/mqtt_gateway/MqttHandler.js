@@ -70,7 +70,7 @@ class MqttHandler {
             device: {
                 id: message.uuid,
                 unit: message.unit,
-                sensor: message.sensor == 1 ? true : false
+                sensor: message.sensor == 1
             }
         })
     }
@@ -83,14 +83,13 @@ class MqttHandler {
      * dr/unregister/{nodeId}
      *
      * @param match
-     * @param message
      * @private
      */
-    __handleUnregister(match, message) {
+    __handleUnregister(match) {
         let nodeId = match[2];
 
         // verifying message
-        assert(nodeId === undefined || nodeId === null);
+        assert(!(nodeId === undefined || nodeId === null));
 
         // calling callback
         this.unregisterCallback({
@@ -109,7 +108,7 @@ class MqttHandler {
      */
     handle(topic, msg) {
         try {
-            let rawMsg = new String(msg).replace('\u0000', '');
+            let rawMsg = String(msg).replace('\u0000', '');
             let message = undefined;
             try {
                 message = JSON.parse(rawMsg);

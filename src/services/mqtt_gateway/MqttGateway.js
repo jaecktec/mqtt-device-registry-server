@@ -4,7 +4,8 @@ var co = require('co');
 var amqp = require('amqplib');
 const MqttHandler = require("./MqttHandler");
 
-const AmqpExchanges = require("../../bin/constants/AmqpExchanges");
+const AmqpExchanges = require("../../constants/AmqpExchanges");
+const MqttGatewayRoutingKey = require("./constants/MqttGatewayRoutingKey");
 
 class MqttApp {
 
@@ -33,10 +34,10 @@ class MqttApp {
             unit: device.device.unit,
             sensor: device.device.sensor
         });
-        console.log(this.exchange.exchange, "dr.api.device", amqpMessage);
+        console.log(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
-            "dr.api.device",
+            MqttGatewayRoutingKey.DEVICE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
 
@@ -45,10 +46,10 @@ class MqttApp {
         let amqpMessage = JSON.stringify({
             nodeId: node,
         });
-        console.log(this.exchange.exchange, "dr.api.node", amqpMessage);
+        console.log(this.exchange.exchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
-            "dr.api.node",
+            MqttGatewayRoutingKey.NODE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
 
@@ -67,20 +68,18 @@ class MqttApp {
             deviceId: message.device.id,
             message: message.device.message
         });
-        console.log(this.exchange.exchange, "dr.api.value", amqpMessage);
+        console.log(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
-            "dr.api.value",
+            MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
 
     start(amqpUrl, mqttUrl) {
         return co.wrap(function*(_this, _amqpUrl, _mqttUrl) {
             let connection = yield amqp.connect(_amqpUrl);
-            var channel = yield connection.createChannel();
-            let exchange = yield channel.assertExchange(AmqpExchanges.mqttGatewayExchange, 'direct', {durable: false});
-            _this.exchange = exchange;
-            _this.channel = channel;
+            _this.channel = yield connection.createChannel();
+            _this.exchange = yield _this.channel.assertExchange(AmqpExchanges.mqttGatewayExchange, 'direct', {durable: false});
             _this.mqttClient = mqtt.connect(_mqttUrl);
             _this.mqttClient.subscribe('dr/register/+');
             _this.mqttClient.subscribe('dr/device/+/+');
