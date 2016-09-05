@@ -19,11 +19,11 @@ class DummyAmqpChannel {
         this.debugBindToAfterBindings = this.debugBindToAfterBindings.filter((bind) => bind, queueName != queueName);
     }
 
-    static ack() {
+    ack() {
         debug("message got acked")
     }
 
-    static reject() {
+    reject() {
         debug("message got rejected")
     }
 
