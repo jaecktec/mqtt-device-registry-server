@@ -106,5 +106,35 @@ describe('DeviceServiceTest', function () {
         })));
     });
 
+    it('device message - device does exist - checking if updated', function (done) {
+        "use strict";
+        before(function () {
+            return new DbDevice({
+                nodeId: "nodeid",
+                id: "deviceid",
+                sensor: false,
+                unit: "un"
+            }).save();
+        });
+
+        DummyAmqpChannel.debugBindToAfter(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT, ()=> {
+            debug("Searhing...");
+            DbDevice.findOne({nodeId: "nodeid", id: "deviceid"}).then((d)=> {
+                expect(d).to.not.be.null;
+                expect(d).to.have.deep.property("nodeId", "nodeid");
+                expect(d).to.have.deep.property("id", "deviceid");
+                expect(d).to.have.deep.property("unit", "unit");
+                expect(d).to.have.deep.property("sensor", true);
+                done();
+            }).catch(debug);
+        });
+        DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            nodeId: "nodeid",
+            id: "deviceid",
+            unit: "unit",
+            sensor: true
+        })));
+    });
+
 });
 

@@ -16,7 +16,7 @@ class DummyAmqpChannel {
         debug("Removing queue consumer and queue bindings wit queueName '%s'", queueName);
         delete this.consumes[queueName];
         this.queueBindings = this.queueBindings.filter((bind) => bind, queueName != queueName);
-        this.debugBindToAfterBindings = this.debugBindToAfterBindings.filter((bind) => bind, queueName != queueName);
+        this.debugBindToAfterBindings = [];
     }
 
     ack() {
