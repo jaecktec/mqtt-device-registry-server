@@ -2,9 +2,6 @@ var mockrequire = require('mock-require');
 const debug = require('debug')('mqtt-device-registry.test.DeviceServiceTest');
 var expect = require("chai").expect;
 
-
-const MONGODB_URI_TEST = "mongodb://localhost:32774/device_registry_test";
-
 // Mocking AMQP
 const DummyAmqp = require("../DummyAmqp/DummyAmqp");
 const DummyAmqpChannel = require("../DummyAmqp/DummyAmqpChannel");
@@ -30,7 +27,7 @@ const DbDevice = require("../../src/services/device_service/db/Device");
 describe('DeviceServiceTest', function () {
     before(function () {
         "use strict";
-        return DeviceService.start(MONGODB_URI_TEST, "");
+        return DeviceService.start(process.env.MONGODB_URI, "");
     });
 
     beforeEach(function () {
