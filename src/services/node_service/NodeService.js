@@ -44,6 +44,10 @@ class NodeService {
         })(this, mongoUrl, amqpUrl);
     }
 
+    stop() {
+        mongoose.connection.close();
+    }
+
     /**
      * checks if node already exists. If not, publishes amqp message to exchange with routin key:
      * -> not existent: NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY
@@ -56,7 +60,6 @@ class NodeService {
     __onDeviceMessage(msg, channel) {
         return co.wrap(function*(_this, msg) {
             let msgObj = AmqpHelper.bufferToObj(msg.content);
-            console.log("__onDeviceMessage", msgObj);
             // check if node exists:
             let node = yield DbNode.findOne({id: msgObj.nodeId});
             if (!node) {
@@ -73,7 +76,6 @@ class NodeService {
                     new Buffer(msg.content));
             }
 
-
             if (Object.keys(msgObj).length == 1 && msgObj.nodeId !== undefined) {
                 // node disconnected
                 channel.publish(
@@ -81,7 +83,6 @@ class NodeService {
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY,
                     new Buffer(msg.content));
             }
-
 
         })(this, msg);
     }

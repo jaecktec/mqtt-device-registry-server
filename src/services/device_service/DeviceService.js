@@ -42,22 +42,9 @@ class DeviceService {
         })(this, mongoUrl, amqpUrl);
     }
 
-    // /**
-    //  * Handling for amqp ack handling
-    //  * @param msg amqp message
-    //  * @param channel amqp channel
-    //  * @param handler method wich should be called. passing arg0: msg, arg1: channel
-    //  * @private
-    //  */
-    // __handleMessage(msg, channel, handler) {
-    //     co(function *() {
-    //         yield handler(msg, channel);
-    //         channel.ack(msg);
-    //     }).catch((error) => {
-    //         console.log("__handleMessage - Error", error);
-    //         channel.reject(msg, true)
-    //     });
-    // }
+    stop() {
+        mongoose.connection.close();
+    }
 
     /**
      * checks if device exists, if not, publishes msg to exchange with routing key:
