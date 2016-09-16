@@ -42,8 +42,7 @@ describe('NodeServiceTest', function () {
     });
 
     beforeEach(function (done) {
-        DummyAmqpChannel.clear("test";
-        )
+        DummyAmqpChannel.clear("test");
         done();
     });
 
