@@ -68,7 +68,6 @@ class MqttApp {
             deviceId: message.device.id,
             message: message.device.message
         });
-        console.log(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
             MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY,

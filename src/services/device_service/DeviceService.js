@@ -1,4 +1,4 @@
-const debug = require('debug')('mqtt-device-registry.test.DeviceService');
+const debug = require('debug')('mqtt-device-registry.DeviceService');
 var co = require('co');
 var amqp = require('amqplib');
 const mongoose = require('mongoose');
