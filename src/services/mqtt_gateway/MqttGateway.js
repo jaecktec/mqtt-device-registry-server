@@ -1,3 +1,4 @@
+const debug = require('debug')('mqtt-device-registry.MqttGateway');
 const mqtt = require("mqtt");
 const assert = require('assert');
 var co = require('co');
@@ -6,6 +7,7 @@ const MqttHandler = require("./MqttHandler");
 
 const AmqpExchanges = require("../../constants/AmqpExchanges");
 const MqttGatewayRoutingKey = require("./constants/MqttGatewayRoutingKey");
+const MqttGatewayBrokerTopics = require("./constants/MqttGatewayBrokerTopics");
 
 class MqttApp {
 
@@ -34,7 +36,7 @@ class MqttApp {
             unit: device.device.unit,
             sensor: device.device.sensor
         });
-        console.log(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, amqpMessage);
+        debug(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
             MqttGatewayRoutingKey.DEVICE_ROUTING_KEY,
@@ -44,9 +46,9 @@ class MqttApp {
     __publishNodeDisconnected(node) {
         assert(this.channel);
         let amqpMessage = JSON.stringify({
-            nodeId: node,
+            nodeId: node.id,
         });
-        console.log(this.exchange.exchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, amqpMessage);
+        debug(this.exchange.exchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
             this.exchange.exchange,
             MqttGatewayRoutingKey.NODE_ROUTING_KEY,
@@ -80,12 +82,11 @@ class MqttApp {
             _this.channel = yield connection.createChannel();
             _this.exchange = yield _this.channel.assertExchange(AmqpExchanges.mqttGatewayExchange, 'direct', {durable: false});
             _this.mqttClient = mqtt.connect(_mqttUrl);
-            _this.mqttClient.subscribe('dr/register/+');
-            _this.mqttClient.subscribe('dr/device/+/+');
-            _this.mqttClient.subscribe('dr/unregister/+');
+            _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_REGISTER);
+            _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_DEVICE);
+            _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_UNREGISTER);
             _this.mqttClient.on('message', (topic, message)=>_this.mqttHandler.handle(topic, message));
-            _this.mqttClient.publish('dr/register/update');
-            return Promise.resolve();
+            _this.mqttClient.publish(MqttGatewayBrokerTopics.TOPIC_UPDATE_REGISTER);
         })(this, amqpUrl, mqttUrl);
     }
 

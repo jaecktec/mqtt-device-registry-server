@@ -33,6 +33,12 @@ class DummyAmqpChannel {
     assertQueue() {
     }
 
+    assertExchange(name) {
+        return {
+            exchange: name
+        }
+    }
+
     bindQueue(queueName, exchangeName, routingKey) {
         debug("Binding queue '%s' to exchange '%s' with routing key '%s'", queueName, exchangeName, routingKey);
         this.queueBindings.push({
@@ -51,6 +57,7 @@ class DummyAmqpChannel {
 
     publish(exchange, routingKey, msg) {
         "use strict";
+        debug("publishing to exchange %s, and routingKey %s", exchange, routingKey, msg);
         let _this = this;
         let binding = this.queueBindings.filter((binding)=>binding.exchangeName == exchange && binding.routingKey == routingKey);
         if (!binding) {

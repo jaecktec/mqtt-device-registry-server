@@ -1,3 +1,4 @@
+const debug = require('debug')('mqtt-device-registry.MqttHandler');
 const assert = require('assert');
 
 /**
@@ -131,10 +132,10 @@ class MqttHandler {
                     this.__handleUnregister(match, message);
                     break;
                 default:
-                    console.log("couldnt parse " + match[0]);
+                    debug("couldnt parse " + match[0]);
             }
         } catch (e) {
-            console.log(e);
+            debug(e);
         }
     }
 }

@@ -1,3 +1,4 @@
+const debug = require('debug')('mqtt-device-registry.NodeService');
 const assert = require('assert');
 var co = require('co');
 var amqp = require('amqplib');
