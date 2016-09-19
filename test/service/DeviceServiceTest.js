@@ -50,7 +50,7 @@ describe('DeviceServiceTest', function () {
 
         it('checking routing', function (done) {
             "use strict";
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT);
             DummyAmqpChannel.consume("test", (msgBuffer)=> {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
                 expect(msg.nodeId).to.equal("nodeid");
@@ -59,7 +59,7 @@ describe('DeviceServiceTest', function () {
                 expect(msg.sensor).to.equal("sensor");
                 done();
             });
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit",
@@ -69,14 +69,14 @@ describe('DeviceServiceTest', function () {
 
         it('checking if created', function (done) {
             "use strict";
-            DummyAmqpChannel.debugBindToAfter(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT, ()=> {
+            DummyAmqpChannel.debugBindToAfter(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT, ()=> {
                 debug("Searhing...");
                 DbDevice.findOne({nodeId: "nodeid", id: "deviceid"}).then((d)=> {
                     expect(d).to.not.be.null;
                     done();
                 }).catch(debug);
             });
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit",
@@ -102,7 +102,7 @@ describe('DeviceServiceTest', function () {
         it('checking routing', function (done) {
             "use strict";
 
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE);
 
             DummyAmqpChannel.consume("test", (msgBuffer)=> {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
@@ -113,7 +113,7 @@ describe('DeviceServiceTest', function () {
                 done();
             });
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit_new",
@@ -125,7 +125,7 @@ describe('DeviceServiceTest', function () {
         it('checking if updated', function (done) {
             "use strict";
 
-            DummyAmqpChannel.debugBindToAfter(DeviceServiceQueue.deviceReconnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE, ()=> {
+            DummyAmqpChannel.debugBindToAfter(DeviceServiceQueue.deviceReconnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE, ()=> {
                 DbDevice.findOne({nodeId: "nodeid", id: "deviceid"}).then((d)=> {
                     expect(d).to.not.be.null;
                     expect(d).to.have.deep.property("nodeId", "nodeid");
@@ -135,7 +135,7 @@ describe('DeviceServiceTest', function () {
                     done();
                 }).catch(debug);
             });
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit_new",

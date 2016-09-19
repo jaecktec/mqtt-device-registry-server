@@ -40,7 +40,7 @@ describe("MqttGatewayTest", function () {
 
     var DEVICE_REGISTER_MSG = '{"unit":"unit","sensor":1,"uuid":"deviceid"}';
     it("Register message", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY);
+        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY);
         DummyAmqpChannel.consume("test", function (msgBuffer) {
             let msg = AmqpHelper.bufferToObj(msgBuffer.content);
             expect(msg.nodeId).to.equal("nodeid");
@@ -54,7 +54,7 @@ describe("MqttGatewayTest", function () {
 
     var DEVICE_VALUE_MSG = '{"value": "test"}';
     it("Value message", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY);
+        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY);
         DummyAmqpChannel.consume("test", function (msgBuffer) {
             let msg = AmqpHelper.bufferToObj(msgBuffer.content);
             expect(msg.nodeId).to.equal("nodeid");
@@ -66,7 +66,7 @@ describe("MqttGatewayTest", function () {
     });
 
     it("Node disconnected", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY);
+        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY);
         DummyAmqpChannel.consume("test", function (msgBuffer) {
             let msg = AmqpHelper.bufferToObj(msgBuffer.content);
             expect(msg.nodeId).to.equal("nodeid");

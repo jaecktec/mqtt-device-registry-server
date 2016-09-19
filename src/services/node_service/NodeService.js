@@ -28,12 +28,12 @@ class NodeService {
 
 
             yield [
-                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.nodeConnectedQueue, AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.nodeReconnectedQueue, AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.nodeDisconnectedQueue, AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY)];
+                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.nodeConnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.nodeReconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.nodeDisconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY)];
 
             channel.consume(NodeServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onDeviceMessage), {noAck: false});
             channel.consume(NodeServiceQueue.nodeConnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createNode), {noAck: false});
@@ -68,13 +68,13 @@ class NodeService {
             if (!node) {
                 // publish create Node
                 channel.publish(
-                    AmqpExchanges.mqttGatewayExchange,
+                    AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY,
                     new Buffer(msg.content));
             } else {
                 // publish update Node
                 channel.publish(
-                    AmqpExchanges.mqttGatewayExchange,
+                    AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY,
                     new Buffer(msg.content));
             }
@@ -82,7 +82,7 @@ class NodeService {
             if (Object.keys(msgObj).length == 1 && msgObj.nodeId !== undefined) {
                 // node disconnected
                 channel.publish(
-                    AmqpExchanges.mqttGatewayExchange,
+                    AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY,
                     new Buffer(msg.content));
             }

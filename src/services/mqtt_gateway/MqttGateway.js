@@ -81,7 +81,7 @@ class MqttApp {
         return co.wrap(function*(_this, _amqpUrl, _mqttUrl) {
             let connection = yield amqp.connect(_amqpUrl);
             _this.channel = yield connection.createChannel();
-            _this.exchange = yield _this.channel.assertExchange(AmqpExchanges.mqttGatewayExchange, 'direct', {durable: false});
+            _this.exchange = yield _this.channel.assertExchange(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, 'direct', {durable: false});
             _this.mqttClient = mqtt.connect(_mqttUrl);
             _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_REGISTER);
             _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_DEVICE);

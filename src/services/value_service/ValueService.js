@@ -26,8 +26,8 @@ class ValueService {
 
 
             yield [
-                channel.bindQueue(ValueServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
-                channel.bindQueue(ValueServiceQueue.newValueQueue, AmqpExchanges.mqttGatewayExchange, ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW),
+                channel.bindQueue(ValueServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
+                channel.bindQueue(ValueServiceQueue.newValueQueue, AmqpExchanges.VALUE_API_EXCHANGE, ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW),
             ];
 
             channel.consume(ValueServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onValueMessage), {noAck: false});
@@ -56,7 +56,7 @@ class ValueService {
             let msgObj = AmqpHelper.bufferToObj(msg.content);
             debug(msgObj);
             channel.publish(
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.VALUE_API_EXCHANGE,
                 ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW,
                 new Buffer(msg.content));
         })(this, msg, channel);

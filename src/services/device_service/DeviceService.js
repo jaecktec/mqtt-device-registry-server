@@ -28,9 +28,9 @@ class DeviceService {
 
 
             yield [
-                channel.bindQueue(DeviceServiceQueue.mainQueue, AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
-                channel.bindQueue(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT),
-                channel.bindQueue(DeviceServiceQueue.deviceReconnectedQueue, AmqpExchanges.mqttGatewayExchange, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE),
+                channel.bindQueue(DeviceServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
+                channel.bindQueue(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT),
+                channel.bindQueue(DeviceServiceQueue.deviceReconnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE),
             ];
 
             channel.consume(DeviceServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onDeviceMessage), {noAck: false});
@@ -65,12 +65,12 @@ class DeviceService {
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
             if (!device) {
                 channel.publish(
-                    AmqpExchanges.mqttGatewayExchange,
+                    AmqpExchanges.DEVICE_API_EXCHANGE,
                     DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT,
                     new Buffer(msg.content));
             } else {
                 channel.publish(
-                    AmqpExchanges.mqttGatewayExchange,
+                    AmqpExchanges.DEVICE_API_EXCHANGE,
                     DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE,
                     new Buffer(msg.content));
             }

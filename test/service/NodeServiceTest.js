@@ -55,7 +55,7 @@ describe('NodeServiceTest', function () {
 
         it('checking correct routing', function (done) {
             "use strict";
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY);
             DummyAmqpChannel.consume("test", function (msgBuffer) {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
                 expect(msg.nodeId).to.equal("nodeid");
@@ -66,7 +66,7 @@ describe('NodeServiceTest', function () {
             });
 
             //noinspection ES6ModulesDependencies
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit",
@@ -79,7 +79,7 @@ describe('NodeServiceTest', function () {
 
             DummyAmqpChannel.debugBindToAfter(
                 NodeServiceQueue.nodeConnectedQueue,
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.NODE_API_EXCHANGE,
                 NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY, ()=> {
                     debug("Searhing...");
                     DbNode.findOne({id: "nodeid"}).then(function (d) {
@@ -89,7 +89,7 @@ describe('NodeServiceTest', function () {
                 });
 
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit",
@@ -115,7 +115,7 @@ describe('NodeServiceTest', function () {
 
         it('checking correct routing', function (done) {
             "use strict";
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY);
             DummyAmqpChannel.consume("test", function (msgBuffer) {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
                 expect(msg.nodeId).to.equal("nodeid");
@@ -125,7 +125,7 @@ describe('NodeServiceTest', function () {
                 done();
             });
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 id: "deviceid",
                 unit: "unit",
@@ -138,7 +138,7 @@ describe('NodeServiceTest', function () {
 
             DummyAmqpChannel.debugBindToAfter(
                 NodeServiceQueue.nodeReconnectedQueue,
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.NODE_API_EXCHANGE,
                 NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY, ()=> {
                     DbNode.findOne({id: "nodeid"}).then(function (d) {
                         expect(d).to.not.be.null;
@@ -150,7 +150,7 @@ describe('NodeServiceTest', function () {
                 });
 
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: 'nodeid',
                 id: "deviceid",
                 unit: "unit_new",
@@ -174,14 +174,14 @@ describe('NodeServiceTest', function () {
         });
 
         it("check correct routing", function (done) {
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY);
             DummyAmqpChannel.consume("test", function (msgBuffer) {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
                 expect(msg.nodeId).to.equal("nodeid");
                 done();
             });
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid"
             })));
         });
@@ -190,7 +190,7 @@ describe('NodeServiceTest', function () {
 
             DummyAmqpChannel.debugBindToAfter(
                 NodeServiceQueue.nodeDisconnectedQueue,
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.NODE_API_EXCHANGE,
                 NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY, ()=> {
                     DbNode.findOne({id: "nodeid"}).then(function (d) {
                         expect(d).to.not.be.null;
@@ -202,7 +202,7 @@ describe('NodeServiceTest', function () {
                     }).catch(debug);
                 });
 
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid"
             })));
         });

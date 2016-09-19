@@ -56,7 +56,7 @@ describe('ValueServiceTest', function () {
 
         it('checking correct routing', function (done) {
             "use strict";
-            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW);
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.VALUE_API_EXCHANGE, ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW);
             DummyAmqpChannel.consume("test", function (msgBuffer) {
                 let msg = AmqpHelper.bufferToObj(msgBuffer.content);
                 expect(msg.nodeId).to.equal("nodeid");
@@ -66,7 +66,7 @@ describe('ValueServiceTest', function () {
             });
 
             //noinspection ES6ModulesDependencies
-            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY, new Buffer(JSON.stringify({
+            DummyAmqpChannel.publish(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 deviceId: "deviceid",
                 message: {value: "test"}
@@ -78,7 +78,7 @@ describe('ValueServiceTest', function () {
 
             DummyAmqpChannel.debugBindToAfter(
                 ValueServiceQueue.newValueQueue,
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.VALUE_API_EXCHANGE,
                 ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW, ()=> {
                     DbValue.findOne({
                         nodeId: "nodeid",
@@ -92,7 +92,7 @@ describe('ValueServiceTest', function () {
 
 
             DummyAmqpChannel.publish(
-                AmqpExchanges.mqttGatewayExchange,
+                AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
                 MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY,
                 new Buffer(JSON.stringify({
                     nodeId: "nodeid",
