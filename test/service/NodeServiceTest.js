@@ -98,7 +98,7 @@ describe('NodeServiceTest', function () {
     });
 
 
-    describe('device message -  node does exist', function () {
+    describe('device message - node does exist', function () {
         "use strict";
 
         beforeEach(function (done) {
@@ -156,6 +156,55 @@ describe('NodeServiceTest', function () {
                 sensor: false
             })));
         });
-    })
+    });
+
+    describe('node disconnect message - node exists', function () {
+        "use strict";
+
+        beforeEach(function (done) {
+            DbNode.find({id: "nodeid"}).remove().exec().then(()=> {
+                new DbNode({
+                    id: "nodeid",
+                    first_seen: new Date(2000, 12, 1),
+                    last_seen: new Date(2000, 12, 1),
+                    disconnected: null
+                }).save().then(()=>done());
+            });
+        });
+
+        it("check correct routing", function (done) {
+            DummyAmqpChannel.bindQueue("test", AmqpExchanges.mqttGatewayExchange, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY);
+            DummyAmqpChannel.consume("test", function (msgBuffer) {
+                let msg = AmqpHelper.bufferToObj(msgBuffer.content);
+                expect(msg.nodeId).to.equal("nodeid");
+                done();
+            });
+
+            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
+                nodeId: "nodeid"
+            })));
+        });
+
+        it("check node if node is updated", function (done) {
+
+            DummyAmqpChannel.debugBindToAfter(
+                NodeServiceQueue.nodeDisconnectedQueue,
+                AmqpExchanges.mqttGatewayExchange,
+                NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY, ()=> {
+                    DbNode.findOne({id: "nodeid"}).then(function (d) {
+                        expect(d).to.not.be.null;
+                        expect(d).to.have.deep.property("id", "nodeid");
+                        expect(d["first_seen"]).to.equalDate(new Date(2000, 12, 1));
+                        expect(d["last_seen"]).to.afterDate(new Date(2000, 12, 1));
+                        expect(d.disconnected).to.not.null;
+                        done();
+                    }).catch(debug);
+                });
+
+            DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, new Buffer(JSON.stringify({
+                nodeId: "nodeid"
+            })));
+        });
+    });
 
 });
