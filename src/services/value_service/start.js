@@ -1,7 +1,10 @@
+/**
+ * Created by Constantin Jaeck on 19.09.2016.
+ */
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const app = require("./DeviceService");
+const app = require("./ValueService");
 const assert = require("assert");
 
 const RABBIT_MQ_URI = process.env.RABBIT_MQ_URI;

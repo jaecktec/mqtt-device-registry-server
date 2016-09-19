@@ -3,7 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "--harmony start.es6",
+    "start": "node --harmony start.js",
+    "start-device-service": "node --harmony src/services/device_service/start.js",
+    "start-node-service": "node --harmony src/services/node_service/start.js",
+    "start-value-service": "node --harmony src/services/value_service/start.js",
+    "start-mqtt-gateway": "node --harmony src/services/mqtt_gateway/start.js",
     "test": "mocha test --recursive --harmony",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- -R spec test --recursive --harmony"
   },

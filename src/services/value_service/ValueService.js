@@ -12,7 +12,7 @@ const ValueServiceRoutingKey = require("./constants/ValueServiceRoutingKey");
 
 const DbValue = require("./db/Value");
 
-class DeviceService {
+class ValueService {
 
     start(mongoUrl, amqpUrl) {
         return co.wrap(function*(_this, _mongoUrl, _amqpUrl) {
@@ -83,4 +83,4 @@ class DeviceService {
     }
 }
 
-module.exports = new DeviceService();
+module.exports = new ValueService();

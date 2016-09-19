@@ -117,6 +117,8 @@ class DeviceService {
             yield device.save();
         })(this, msg);
     }
+
+
 }
 
 module.exports = new DeviceService();
