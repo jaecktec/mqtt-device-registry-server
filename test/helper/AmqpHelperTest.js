@@ -35,4 +35,4 @@ describe('AmqpHelperTest', function () {
             return new Promise((re, rej)=> rej())
         })
     });
-})
+});

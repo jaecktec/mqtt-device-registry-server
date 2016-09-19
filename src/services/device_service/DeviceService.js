@@ -15,6 +15,7 @@ const DbDevice = require("./db/Device");
 class DeviceService {
 
     start(mongoUrl, amqpUrl) {
+        //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, _mongoUrl, _amqpUrl) {
 
             // AMQP connect and setup
@@ -42,6 +43,7 @@ class DeviceService {
         })(this, mongoUrl, amqpUrl);
     }
 
+    //noinspection JSMethodCanBeStatic
     stop() {
         mongoose.connection.close();
     }
@@ -56,6 +58,7 @@ class DeviceService {
      * @private
      */
     __onDeviceMessage(msg, channel) {
+        //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg, channel) {
             let msgObj = AmqpHelper.bufferToObj(msg.content);
             // check if device exists:
@@ -81,6 +84,7 @@ class DeviceService {
      * @private
      */
     __createDevice(msg) {
+        //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg) {
             let msgObj = AmqpHelper.bufferToObj(msg.content);
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
@@ -104,6 +108,7 @@ class DeviceService {
      * @private
      */
     __refreshDevice(msg) {
+        //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg) {
             let msgObj = AmqpHelper.bufferToObj(msg.content);
             let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});

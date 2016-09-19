@@ -65,6 +65,7 @@ describe('ValueServiceTest', function () {
                 done();
             });
 
+            //noinspection ES6ModulesDependencies
             DummyAmqpChannel.publish(AmqpExchanges.mqttGatewayExchange, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY, new Buffer(JSON.stringify({
                 nodeId: "nodeid",
                 deviceId: "deviceid",

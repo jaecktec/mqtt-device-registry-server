@@ -112,6 +112,7 @@ class MqttHandler {
             let rawMsg = String(msg).replace('\u0000', '');
             let message = undefined;
             try {
+                //noinspection ES6ModulesDependencies
                 message = JSON.parse(rawMsg);
             } catch (e) {
                 message = {};

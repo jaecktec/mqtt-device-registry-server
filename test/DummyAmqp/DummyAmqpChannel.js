@@ -19,10 +19,12 @@ class DummyAmqpChannel {
         this.debugBindToAfterBindings = [];
     }
 
+    //noinspection JSMethodCanBeStatic
     ack() {
         debug("message got acked")
     }
 
+    //noinspection JSMethodCanBeStatic
     reject() {
         debug("message got rejected")
     }
@@ -33,6 +35,7 @@ class DummyAmqpChannel {
     assertQueue() {
     }
 
+    //noinspection JSMethodCanBeStatic
     assertExchange(name) {
         return {
             exchange: name

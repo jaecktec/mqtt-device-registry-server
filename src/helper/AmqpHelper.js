@@ -9,7 +9,7 @@ class AmqpHelper {
      * @param handler method wich should be called. passing arg0: msg, arg1: channel
      */
     static handleAck(msg, channel, handler) {
-        return co.wrap(function *(msg, channel, handler) {
+        return co.wrap(function*(msg, channel, handler) {
             try {
                 yield handler(msg, channel);
                 channel.ack(msg);

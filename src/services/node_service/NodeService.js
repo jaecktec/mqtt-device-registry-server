@@ -46,6 +46,7 @@ class NodeService {
         })(this, mongoUrl, amqpUrl);
     }
 
+    //noinspection JSMethodCanBeStatic
     stop() {
         mongoose.connection.close();
     }

@@ -30,6 +30,7 @@ class MqttApp {
      */
     __publishDevice(device) {
         assert(this.channel);
+        //noinspection ES6ModulesDependencies
         let amqpMessage = JSON.stringify({
             nodeId: device.id,
             id: device.device.id,
