@@ -56,9 +56,9 @@ describe('AmqpHelperTest', function () {
         });
 
         AmqpHelper.rpcRequest({hello: "hello"}, "test-exchange", "test-routing-key", DummyAmqpChannel).then((response)=> {
-            debug(response);
+            expect(response.world).to.equal("world");
             done();
-        });
+        }).catch(debug);
     });
 
 

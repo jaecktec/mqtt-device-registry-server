@@ -38,7 +38,7 @@ class AmqpHelper {
                 channel.bindQueue(queue.queue, AmqpExchanges.RPC_RETURN_EXCHANGE, correlationId);
                 channel.consume(queue.queue, (msg)=> {
                     channel.cancel(consumerTag);
-                    resolve(msg);
+                    resolve(AmqpHelper.bufferToObj(msg.content));
                 }, {noAck: true, consumerTag: consumerTag, exclusive: true});
                 channel.publish(exchange, routingKey, AmqpHelper.objToBuffer({
                     correlationId: correlationId,
@@ -46,7 +46,7 @@ class AmqpHelper {
                     content: msg
                 }));
             });
-        }).catch(debug);
+        });
     }
 
     static rpcRespond(msg, request, channel) {
