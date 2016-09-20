@@ -60,6 +60,4 @@ describe('AmqpHelperTest', function () {
             done();
         }).catch(debug);
     });
-
-
 });
