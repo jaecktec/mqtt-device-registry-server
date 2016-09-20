@@ -1,5 +1,5 @@
 const debug = require("debug")("mqtt-device-registry.test.DummyAmqpChannel");
-
+const uuid = require('uuid');
 /**
  *
  */
@@ -33,6 +33,14 @@ class DummyAmqpChannel {
     }
 
     assertQueue() {
+        return new Promise((resolve)=> {
+            resolve({
+                queue: uuid.v4()
+            });
+        });
+    }
+
+    cancel() {
     }
 
     //noinspection JSMethodCanBeStatic

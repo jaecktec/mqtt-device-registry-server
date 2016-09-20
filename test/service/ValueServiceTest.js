@@ -33,7 +33,6 @@ const DbValue = require("../../src/services/value_service/db/Value");
 
 describe('ValueServiceTest', function () {
     before(function () {
-        "use strict";
         return ValueService.start(process.env.MONGODB_URI, "");
     });
 
