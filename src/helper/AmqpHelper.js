@@ -16,7 +16,7 @@ class AmqpHelper {
                 yield handler(msg, channel);
                 channel.ack(msg);
             } catch (error) {
-                debug(error);
+                debug("error", error);
                 channel.reject(msg, true)
             }
         })(msg, channel, handler);
