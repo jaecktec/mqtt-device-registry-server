@@ -1,3 +1,5 @@
+const co = require("co");
+
 class AmqpExchanges{
     static get MQTT_GATEWAY_EXCHANGE() {
         return "dr.mqtt";
@@ -17,6 +19,17 @@ class AmqpExchanges{
 
     static get RPC_RETURN_EXCHANGE() {
         return "dr.rpc";
+    }
+
+    static createExchanges(channel) {
+        return co.wrap(function*() {
+            yield channel.assertExchange(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, 'direct', {});
+            yield channel.assertExchange(AmqpExchanges.NODE_API_EXCHANGE, 'direct', {});
+            yield channel.assertExchange(AmqpExchanges.DEVICE_API_EXCHANGE, 'direct', {});
+            yield channel.assertExchange(AmqpExchanges.VALUE_API_EXCHANGE, 'direct', {});
+            yield channel.assertExchange(AmqpExchanges.RPC_RETURN_EXCHANGE, 'direct', {});
+            return yield Promise.resolve();
+        })();
     }
 }
 module.exports = AmqpExchanges;

@@ -103,13 +103,29 @@ describe('NodeServiceTest', function () {
         "use strict";
 
         beforeEach(function (done) {
-            DbNode.find({id: "nodeid"}).remove().exec().then(()=> {
-                new DbNode({
-                    id: "nodeid",
-                    first_seen: new Date(2000, 12, 1),
-                    last_seen: new Date(2000, 12, 1),
-                    disconnected: null
-                }).save().then(()=>done());
+            DbNode.find({}).remove().exec().then(()=> {
+                Promise.all([
+                    new DbNode({
+                        id: "nodeid",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: new Date(1999, 12, 1)
+                    }).save(), new DbNode({
+                        id: "nodeid_disconnected",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: new Date(2001, 12, 1)
+                    }).save(), new DbNode({
+                        id: "nodeid2",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: null
+                    }).save(), new DbNode({
+                        id: "nodeid3",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: null
+                    }).save()]).then(()=>done());
             });
         });
 
@@ -156,6 +172,30 @@ describe('NodeServiceTest', function () {
                 unit: "unit_new",
                 sensor: false
             })));
+        });
+
+        it('loading node by nodeId', function (done) {
+            AmqpHelper.rpcRequest({id: "nodeid"}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
+                debug(response);
+                expect(response[0]).to.have.deep.property("id", "nodeid");
+                done();
+            }).catch(debug);
+        });
+
+        it('loading all nodes and check count', function (done) {
+            AmqpHelper.rpcRequest({}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
+                debug(response);
+                expect(response.length).to.equal(4);
+                expect(response.map((n)=> n.id)).include('nodeid_disconnected');
+                done();
+            }).catch(debug);
+        });
+
+        it('loading all donnected nodes and node disconnected is not in there', function (done) {
+            AmqpHelper.rpcRequest({onlyConnected: true}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
+                expect(response.map((n)=> n.id)).not.include('nodeid_disconnected');
+                done();
+            }).catch(debug);
         });
     });
 

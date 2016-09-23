@@ -14,5 +14,9 @@ class NodeServiceQueue {
     static get nodeDisconnectedQueue(){
         return "dr.node.disconnect";
     }
+
+    static get nodeRpcQueue() {
+        return "dr.node.rpc";
+    }
 }
 module.exports = NodeServiceQueue;

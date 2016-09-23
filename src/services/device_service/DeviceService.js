@@ -60,19 +60,18 @@ class DeviceService {
     __onDeviceMessage(msg, channel) {
         //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg, channel) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
             // check if device exists:
-            let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
+            let device = yield DbDevice.findOne({nodeId: msg.nodeId, id: msg.id});
             if (!device) {
                 channel.publish(
                     AmqpExchanges.DEVICE_API_EXCHANGE,
                     DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT,
-                    new Buffer(msg.content));
+                    AmqpHelper.objToBuffer(msg));
             } else {
                 channel.publish(
                     AmqpExchanges.DEVICE_API_EXCHANGE,
                     DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE,
-                    new Buffer(msg.content));
+                    AmqpHelper.objToBuffer(msg));
             }
         })(this, msg, channel);
     }
@@ -86,14 +85,13 @@ class DeviceService {
     __createDevice(msg) {
         //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
+            let device = yield DbDevice.findOne({nodeId: msg.nodeId, id: msg.id});
             if (!device) {
                 let newDevice = new DbDevice({
-                    nodeId: msgObj.nodeId,
-                    id: msgObj.id,
-                    sensor: msgObj.sensor,
-                    unit: msgObj.unit
+                    nodeId: msg.nodeId,
+                    id: msg.id,
+                    sensor: msg.sensor,
+                    unit: msg.unit
                 });
                 yield newDevice.save();
                 debug("New Device saved");
@@ -110,10 +108,9 @@ class DeviceService {
     __refreshDevice(msg) {
         //noinspection JSCheckFunctionSignatures
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            let device = yield DbDevice.findOne({nodeId: msgObj.nodeId, id: msgObj.id});
-            device.sensor = msgObj.sensor;
-            device.unit = msgObj.unit;
+            let device = yield DbDevice.findOne({nodeId: msg.nodeId, id: msg.id});
+            device.sensor = msg.sensor;
+            device.unit = msg.unit;
             yield device.save();
         })(this, msg);
     }

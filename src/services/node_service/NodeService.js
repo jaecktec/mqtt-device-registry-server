@@ -25,7 +25,9 @@ class NodeService {
             channel.assertQueue(NodeServiceQueue.nodeConnectedQueue, {exclusive: false, durable: true});
             channel.assertQueue(NodeServiceQueue.nodeReconnectedQueue, {exclusive: false, durable: true});
             channel.assertQueue(NodeServiceQueue.nodeDisconnectedQueue, {exclusive: false, durable: true});
+            channel.assertQueue(NodeServiceQueue.nodeRpcQueue, {exclusive: false, durable: true});
 
+            yield AmqpExchanges.createExchanges(channel);
 
             yield [
                 channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
@@ -33,12 +35,14 @@ class NodeService {
                 channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.nodeConnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.nodeReconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.nodeDisconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY)];
+                channel.bindQueue(NodeServiceQueue.nodeDisconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.nodeRpcQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE)];
 
             channel.consume(NodeServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onDeviceMessage), {noAck: false});
             channel.consume(NodeServiceQueue.nodeConnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createNode), {noAck: false});
             channel.consume(NodeServiceQueue.nodeReconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__refreshNode), {noAck: false});
             channel.consume(NodeServiceQueue.nodeDisconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__updateDisconnected), {noAck: false});
+            channel.consume(NodeServiceQueue.nodeRpcQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__handleGet), {noAck: false});
 
             // MONGODB connect
             yield mongoose.connect(_mongoUrl);
@@ -62,29 +66,28 @@ class NodeService {
      */
     __onDeviceMessage(msg, channel) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
             // check if node exists:
-            let node = yield DbNode.findOne({id: msgObj.nodeId});
+            let node = yield DbNode.findOne({id: msg.nodeId});
             if (!node) {
                 // publish create Node
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY,
-                    new Buffer(msg.content));
+                    AmqpHelper.objToBuffer(msg));
             } else {
                 // publish update Node
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY,
-                    new Buffer(msg.content));
+                    AmqpHelper.objToBuffer(msg));
             }
 
-            if (Object.keys(msgObj).length == 1 && msgObj.nodeId !== undefined) {
+            if (Object.keys(msg).length == 1 && msg.nodeId !== undefined) {
                 // node disconnected
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY,
-                    new Buffer(msg.content));
+                    AmqpHelper.objToBuffer(msg));
             }
 
         })(this, msg);
@@ -98,12 +101,11 @@ class NodeService {
      */
     __createNode(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            console.log("__createNode", msgObj);
-            let node = yield DbNode.findOne({id: msgObj.nodeId});
+            debug("__createNode", msg);
+            let node = yield DbNode.findOne({id: msg.nodeId});
             if (!node) {
                 yield new DbNode({
-                    id: msgObj.nodeId,
+                    id: msg.nodeId,
                     first_seen: new Date(),
                     last_seen: new Date(),
                     disconnected: null
@@ -120,9 +122,8 @@ class NodeService {
      */
     __refreshNode(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            console.log("__refreshNode", msgObj);
-            let node = yield DbNode.findOne({id: msgObj.nodeId});
+            debug("__refreshNode", msg);
+            let node = yield DbNode.findOne({id: msg.nodeId});
             node.last_seen = new Date();
             node.disconnected = null;
             yield node.save();
@@ -137,12 +138,52 @@ class NodeService {
      */
     __updateDisconnected(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            console.log("__updateDisconnected", msgObj);
-            let node = yield DbNode.findOne({id: msgObj.nodeId});
+            console.log("__updateDisconnected", msg);
+            let node = yield DbNode.findOne({id: msg.nodeId});
             node.disconnected = new Date();
             yield node.save();
         })(this, msg);
+    }
+
+
+    __handleGet(request, channel) {
+        const AGGREGATE_PROJECT = {
+            $project: {
+                _id: 0,
+                id: 1,
+                first_seen: 1,
+                last_seen: 1,
+                disconnected: 1,
+                uptime: {$subtract: ["$last_seen", "$disconnected"]}
+            }
+        };
+        const id = request.content.id;
+        const maxCnt = request.content.maxCount;
+        const onlyConnected = request.content.onlyConnected;
+
+        return co.wrap(function*() {
+                let nodes;
+                if (id) {
+                    nodes = yield DbNode.aggregate([
+                        AGGREGATE_PROJECT,
+                        {$match: {id: id}}
+                    ]);
+                } else {
+                    if (!onlyConnected) {
+                        nodes = yield DbNode.aggregate([
+                            AGGREGATE_PROJECT
+                        ]);
+                    } else {
+                        nodes = yield DbNode.aggregate([
+                            AGGREGATE_PROJECT,
+                            {$match: {uptime: {$gt: 0}}}
+                        ]);
+                    }
+                }
+
+                AmqpHelper.rpcRespond(nodes, request, channel);
+            }
+        )();
     }
 
 

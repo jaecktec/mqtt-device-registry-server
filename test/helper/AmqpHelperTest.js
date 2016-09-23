@@ -31,10 +31,10 @@ describe('AmqpHelperTest', function () {
     });
 
     it('#handleAck - Success', function (done) {
-        AmqpHelper.handleAck({msg: "test"}, {
+        AmqpHelper.handleAck({content: AmqpHelper.objToBuffer({msg: "test"})}, {
             ack: function (msg) {
                 "use strict";
-                expect(msg.msg).to.equal("test");
+                expect(AmqpHelper.bufferToObj(msg.content).msg).to.equal("test");
                 done();
             },
             reject: function () {

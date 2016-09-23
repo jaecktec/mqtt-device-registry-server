@@ -13,7 +13,7 @@ class AmqpHelper {
     static handleAck(msg, channel, handler) {
         return co.wrap(function*(msg, channel, handler) {
             try {
-                yield handler(msg, channel);
+                yield handler(AmqpHelper.bufferToObj(msg.content), channel);
                 channel.ack(msg);
             } catch (error) {
                 debug("error", error);

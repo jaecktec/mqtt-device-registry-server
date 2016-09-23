@@ -53,12 +53,11 @@ class ValueService {
      */
     __onValueMessage(msg, channel) {
         return co.wrap(function*(_this, msg, channel) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
-            debug(msgObj);
+            debug(msg);
             channel.publish(
                 AmqpExchanges.VALUE_API_EXCHANGE,
                 ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW,
-                new Buffer(msg.content));
+                AmqpHelper.objToBuffer(msg));
         })(this, msg, channel);
     }
 
@@ -70,11 +69,10 @@ class ValueService {
      */
     __createNewValue(msg) {
         return co.wrap(function*(_this, msg) {
-            let msgObj = AmqpHelper.bufferToObj(msg.content);
             let newValue = new DbValue({
-                nodeId: msgObj.nodeId,
-                deviceId: msgObj.deviceId,
-                value: msgObj.message,
+                nodeId: msg.nodeId,
+                deviceId: msg.deviceId,
+                value: msg.message,
                 created: new Date()
             });
             yield newValue.save();
