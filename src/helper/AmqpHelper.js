@@ -27,7 +27,7 @@ class AmqpHelper {
             try {
                 let request = AmqpHelper.bufferToObj(msg.content);
                 let response = yield handler(request.content, channel);
-                yield AmqpHelper.rpcRespond(response, request, channel);
+                AmqpHelper.rpcRespond(response, request, channel);
                 channel.ack(msg);
             } catch (error) {
                 debug("error", error);
