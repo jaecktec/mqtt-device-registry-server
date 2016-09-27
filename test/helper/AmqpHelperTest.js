@@ -62,7 +62,25 @@ describe('AmqpHelperTest', function () {
         })
     });
 
-    it('rpc test client to server and back', function (done) {
+
+    it('test rpc handler', function (done) {
+        "use strict";
+        channel.assertQueue(null, {exclusive: true, autoDelete: true}).then((queue)=> {
+            channel.bindQueue(queue.queue, "test-exchange", "test-routing-key");
+            channel.consume(queue.queue, (req)=> {
+                AmqpHelper.handleRpcRquest(req, channel, function (msg) {
+                    expect(msg.hello).to.equal("hello");
+                    return Promise.resolve({world: "world"});
+                })
+            });
+        });
+        AmqpHelper.rpcRequest({hello: "hello"}, "test-exchange", "test-routing-key", channel).then((response)=> {
+            expect(response.world).to.equal("world");
+            done();
+        }).catch(debug);
+    });
+
+    it('test rpc respond', function (done) {
         channel.assertQueue(null, {exclusive: true, autoDelete: true}).then((queue)=> {
             channel.bindQueue(queue.queue, "test-exchange", "test-routing-key");
             channel.consume(queue.queue, (msgBuffer)=> {

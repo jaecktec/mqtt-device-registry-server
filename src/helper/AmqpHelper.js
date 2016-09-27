@@ -22,6 +22,20 @@ class AmqpHelper {
         })(msg, channel, handler);
     }
 
+    static handleRpcRquest(msg, channel, handler) {
+        return co.wrap(function*(msg, channel, handler) {
+            try {
+                let request = AmqpHelper.bufferToObj(msg.content);
+                let response = yield handler(request.content, channel);
+                yield AmqpHelper.rpcRespond(response, request, channel);
+                channel.ack(msg);
+            } catch (error) {
+                debug("error", error);
+                channel.reject(msg, true)
+            }
+        })(msg, channel, handler);
+    }
+
     static bufferToObj(buffer) {
         return JSON.parse(buffer.toString('ascii'));
     }
