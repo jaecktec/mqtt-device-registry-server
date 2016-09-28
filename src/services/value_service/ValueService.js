@@ -24,6 +24,7 @@ class ValueService {
             channel.assertQueue(ValueServiceQueue.mainQueue, {exclusive: false, durable: true});
             channel.assertQueue(ValueServiceQueue.newValueQueue, {exclusive: false, durable: true});
 
+            yield AmqpExchanges.createExchanges(channel);
 
             yield [
                 channel.bindQueue(ValueServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
