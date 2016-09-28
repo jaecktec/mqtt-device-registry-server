@@ -124,7 +124,7 @@ class NodeService {
      */
     __refreshNode(msg) {
         return co.wrap(function*(_this, msg) {
-            debug("__refreshNode", msg);
+            debug("__refreshNode", JSON.stringify(msg));
             let node = yield DbNode.findOne({id: msg.nodeId});
             node.last_seen = new Date();
             node.disconnected = null;
