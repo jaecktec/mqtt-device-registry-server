@@ -174,6 +174,38 @@ describe('NodeServiceTest', function () {
             })));
         });
 
+    });
+
+    describe('rpc tests', function () {
+        "use strict";
+
+        beforeEach(function (done) {
+            DbNode.find({}).remove().exec().then(()=> {
+                Promise.all([
+                    new DbNode({
+                        id: "nodeid",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: new Date(1999, 12, 1)
+                    }).save(), new DbNode({
+                        id: "nodeid_disconnected",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: new Date(2001, 12, 1)
+                    }).save(), new DbNode({
+                        id: "nodeid2",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: null
+                    }).save(), new DbNode({
+                        id: "nodeid3",
+                        first_seen: new Date(2000, 12, 1),
+                        last_seen: new Date(2000, 12, 1),
+                        disconnected: null
+                    }).save()]).then(()=>done());
+            });
+        });
+
         it('loading node by nodeId', function (done) {
             AmqpHelper.rpcRequest({id: "nodeid"}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
                 debug(response);

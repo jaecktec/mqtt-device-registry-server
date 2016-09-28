@@ -5,5 +5,9 @@ module.exports = mongoose.model('Device', new Schema({
     id: String,
     sensor: Boolean,
     unit: String,
-    nodeId: String
+    nodeId: String,
+    store: {
+        max: Number,
+        age: Date
+    }
 }));

@@ -22,11 +22,8 @@ class DeviceService {
             let connection = yield amqp.connect(_amqpUrl);
             var channel = yield connection.createConfirmChannel();
             channel.prefetch(1);
-            channel.assertQueue(DeviceServiceQueue.mainQueue, {exclusive: false, durable: true});
-            channel.assertQueue(DeviceServiceQueue.deviceConnectedQueue, {exclusive: false, durable: true});
-            channel.assertQueue(DeviceServiceQueue.deviceReconnectedQueue, {exclusive: false, durable: true});
-
-
+            DeviceServiceQueue.createQueues(channel);
+            yield AmqpExchanges.createExchanges(channel);
             yield [
                 channel.bindQueue(DeviceServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
                 channel.bindQueue(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT),
@@ -115,7 +112,45 @@ class DeviceService {
         })(this, msg);
     }
 
+    _handleSet(request, channel) {
+        return co.wrap(function*() {
 
+            AmqpHelper.rpcRespond(devices, request, channel);
+        });
+    }
+
+    __handleGet(request, channel) {
+        const AGGREGATE_PROJECT = {
+            $project: {
+                _id: 0,
+                id: 1,
+                sensor: 1,
+                unit: 1,
+                nodeId: 1,
+                store: 1
+            }
+        };
+        const ids = request.ids;
+        const maxCnt = request.maxCount;
+
+        return co.wrap(function*() {
+                let devices;
+                if (id) {
+                    devices = yield DbDevice.aggregate([
+                        AGGREGATE_PROJECT,
+                        {$match: {id: id}}
+                    ]);
+                } else {
+                    devices = yield DbDevice.aggregate([
+                        AGGREGATE_PROJECT,
+                        {$match: {id: id}}
+                    ]);
+                }
+
+                return yield Promise.resolve(devices);
+            }
+        )();
+    }
 }
 
 module.exports = new DeviceService();
