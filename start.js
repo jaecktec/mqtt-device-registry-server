@@ -7,6 +7,8 @@ const MqttGateway = require("./src/services/mqtt_gateway/MqttGateway");
 const NodeService = require("./src/services/node_service/NodeService");
 const ValueService = require("./src/services/value_service/ValueService");
 
+const debug = require("debug")("mqtt-device-registry.startjs");
+
 const assert = require("assert");
 
 const RABBIT_MQ_URI = process.env.RABBIT_MQ_URI;
@@ -22,5 +24,8 @@ Promise.all([
     NodeService.start(MONGO_DB_URI, RABBIT_MQ_URI),
     ValueService.start(MONGO_DB_URI, RABBIT_MQ_URI)
 ])
-    .then(()=>MqttGateway.start(RABBIT_MQ_URI, MQTT_URI))
+    .then(()=> {
+        MqttGateway.start(RABBIT_MQ_URI, MQTT_URI).then(()=>debug("Started"))
+
+    })
     .catch(console.error);
