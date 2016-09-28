@@ -34,7 +34,9 @@ class ValueService {
             channel.consume(ValueServiceQueue.newValueQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createNewValue), {noAck: false});
 
             // MONGODB connect
-            yield mongoose.connect(_mongoUrl);
+            if (!mongoose.connection.readyState) {
+                yield mongoose.connect(_mongoUrl);
+            }
 
         })(this, mongoUrl, amqpUrl);
     }

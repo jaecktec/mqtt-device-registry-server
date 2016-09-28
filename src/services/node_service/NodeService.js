@@ -45,7 +45,9 @@ class NodeService {
             channel.consume(NodeServiceQueue.nodeRpcQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__handleGet), {noAck: false});
 
             // MONGODB connect
-            yield mongoose.connect(_mongoUrl);
+            if (!mongoose.connection.readyState) {
+                yield mongoose.connect(_mongoUrl);
+            }
 
         })(this, mongoUrl, amqpUrl);
     }
