@@ -17,10 +17,10 @@ assert(RABBIT_MQ_URI, "RABBIT_MQ_URI Environment variable missing");
 assert(MONGO_DB_URI, "MONGO_DB_URI Environment variable missing");
 assert(MQTT_URI, "MQTT_URI Environment variable missing");
 
-Promise.all(
+Promise.all([
     DeviceService.start(MONGO_DB_URI, RABBIT_MQ_URI),
     NodeService.start(MONGO_DB_URI, RABBIT_MQ_URI),
     ValueService.start(MONGO_DB_URI, RABBIT_MQ_URI)
-)
+])
     .then(()=>MqttGateway.start(RABBIT_MQ_URI, MQTT_URI))
     .catch(console.error);
