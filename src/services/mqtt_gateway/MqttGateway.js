@@ -37,9 +37,9 @@ class MqttApp {
             unit: device.device.unit,
             sensor: device.device.sensor
         });
-        debug(this.exchange.exchange, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, amqpMessage);
+        debug(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
-            this.exchange.exchange,
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
             MqttGatewayRoutingKey.DEVICE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
@@ -49,9 +49,9 @@ class MqttApp {
         let amqpMessage = JSON.stringify({
             nodeId: node.id,
         });
-        debug(this.exchange.exchange, MqttGatewayRoutingKey.NODE_ROUTING_KEY, amqpMessage);
+        debug(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY, amqpMessage);
         this.channel.publish(
-            this.exchange.exchange,
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
             MqttGatewayRoutingKey.NODE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
@@ -72,7 +72,7 @@ class MqttApp {
             message: message.device.message
         });
         this.channel.publish(
-            this.exchange.exchange,
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
             MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY,
             new Buffer(amqpMessage));
     }
