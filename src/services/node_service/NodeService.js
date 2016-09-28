@@ -149,43 +149,37 @@ class NodeService {
 
 
     __handleGet(request, channel) {
-        const AGGREGATE_PROJECT = {
-            $project: {
-                _id: 0,
-                id: 1,
-                first_seen: 1,
-                last_seen: 1,
-                disconnected: 1,
-                uptime: {$subtract: ["$last_seen", "$disconnected"]}
-            }
-        };
         const id = request.content.id;
-        const maxCnt = request.content.maxCount;
+        const limit = request.content.limit;
         const onlyConnected = request.content.onlyConnected;
 
         return co.wrap(function*() {
-                let nodes;
-                if (id) {
-                    nodes = yield DbNode.aggregate([
-                        AGGREGATE_PROJECT,
-                        {$match: {id: id}}
-                    ]);
-                } else {
-                    if (!onlyConnected) {
-                        nodes = yield DbNode.aggregate([
-                            AGGREGATE_PROJECT
-                        ]);
-                    } else {
-                        nodes = yield DbNode.aggregate([
-                            AGGREGATE_PROJECT,
-                            {$match: {uptime: {$gt: 0}}}
-                        ]);
+            let aggregateParams = [
+                {
+                    $project: {
+                        _id: 0,
+                        id: 1,
+                        first_seen: 1,
+                        last_seen: 1,
+                        disconnected: 1,
+                        uptime: {$subtract: ["$last_seen", "$disconnected"]}
                     }
                 }
-
-                AmqpHelper.rpcRespond(nodes, request, channel);
+            ];
+            let nodes;
+            if (limit) {
+                aggregateParams.push({$sort: {first_seen: 1, posts: 1}});
+                aggregateParams.push({$limit: limit});
             }
-        )();
+            if (id) {
+                aggregateParams.push({$match: {id: id}});
+            } else if (onlyConnected) {
+                aggregateParams.push({$match: {uptime: {$gt: 0}}});
+            }
+            nodes = yield DbNode.aggregate(aggregateParams);
+
+            AmqpHelper.rpcRespond(nodes, request, channel);
+        })();
     }
 
 

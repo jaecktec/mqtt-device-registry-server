@@ -189,18 +189,18 @@ describe('NodeServiceTest', function () {
                         disconnected: new Date(1999, 12, 1)
                     }).save(), new DbNode({
                         id: "nodeid_disconnected",
-                        first_seen: new Date(2000, 12, 1),
-                        last_seen: new Date(2000, 12, 1),
-                        disconnected: new Date(2001, 12, 1)
+                        first_seen: new Date(2000, 12, 2),
+                        last_seen: new Date(2000, 12, 2),
+                        disconnected: new Date(2001, 12, 2)
                     }).save(), new DbNode({
                         id: "nodeid2",
-                        first_seen: new Date(2000, 12, 1),
-                        last_seen: new Date(2000, 12, 1),
+                        first_seen: new Date(2000, 12, 3),
+                        last_seen: new Date(2000, 12, 3),
                         disconnected: null
                     }).save(), new DbNode({
                         id: "nodeid3",
-                        first_seen: new Date(2000, 12, 1),
-                        last_seen: new Date(2000, 12, 1),
+                        first_seen: new Date(2000, 12, 4),
+                        last_seen: new Date(2000, 12, 4),
                         disconnected: null
                     }).save()]).then(()=>done());
             });
@@ -218,6 +218,16 @@ describe('NodeServiceTest', function () {
             AmqpHelper.rpcRequest({}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
                 debug(response);
                 expect(response.length).to.equal(4);
+                expect(response.map((n)=> n.id)).include('nodeid_disconnected');
+                done();
+            }).catch(debug);
+        });
+
+        it('loading all nodes, limit it and check count', function (done) {
+            AmqpHelper.rpcRequest({limit: 2}, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE, DummyAmqpChannel).then((response)=> {
+                debug(response);
+                expect(response.length).to.equal(2);
+                expect(response.map((n)=> n.id)).include('nodeid');
                 expect(response.map((n)=> n.id)).include('nodeid_disconnected');
                 done();
             }).catch(debug);
