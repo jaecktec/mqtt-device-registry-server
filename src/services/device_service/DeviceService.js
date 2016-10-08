@@ -24,15 +24,24 @@ class DeviceService {
             channel.prefetch(1);
             DeviceServiceQueue.createQueues(channel);
             yield AmqpExchanges.createExchanges(channel);
+
             yield [
                 channel.bindQueue(DeviceServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
                 channel.bindQueue(DeviceServiceQueue.deviceConnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT),
                 channel.bindQueue(DeviceServiceQueue.deviceReconnectedQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE),
+
+                // RPC
+                channel.bindQueue(DeviceServiceQueue.deviceRpcGetQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE),
+                channel.bindQueue(DeviceServiceQueue.deviceRpcSetQueue, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_SET_DEVICE_STORAGE),
             ];
 
             channel.consume(DeviceServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onDeviceMessage), {noAck: false});
             channel.consume(DeviceServiceQueue.deviceConnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createDevice), {noAck: false});
             channel.consume(DeviceServiceQueue.deviceReconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__refreshDevice), {noAck: false});
+
+            // RPC
+            channel.consume(DeviceServiceQueue.deviceRpcGetQueue, (msg)=> AmqpHelper.handleRpcRquest(msg, channel, _this.__handleGet));
+            channel.consume(DeviceServiceQueue.deviceRpcSetQueue, (msg)=> AmqpHelper.handleRpcRquest(msg, channel, _this.__handleSet));
 
             // MONGODB connect
             if (!mongoose.connection.readyState) {
@@ -114,15 +123,21 @@ class DeviceService {
         })(this, msg);
     }
 
-    _handleSet(request, channel) {
-        return co.wrap(function*() {
+    __handleSet(request) {
+        const id = request.id;
+        const nodeId = request.nodeId;
+        const store = request.store;
 
-            AmqpHelper.rpcRespond(devices, request, channel);
-        });
+        return co.wrap(function*() {
+            let device = yield DbDevice.findOne({nodeId: nodeId, id: id});
+            device.store = store;
+            yield device.save();
+            return yield Promise.resolve(device);
+        })();
     }
 
-    __handleGet(request, channel) {
-        const AGGREGATE_PROJECT = {
+    __handleGet(request) {
+        let aggregateParams = [{
             $project: {
                 _id: 0,
                 id: 1,
@@ -131,25 +146,32 @@ class DeviceService {
                 nodeId: 1,
                 store: 1
             }
-        };
+        }];
         const ids = request.ids;
-        const maxCnt = request.maxCount;
+        const limit = request.limit;
+        const onlySensor = request.sensor;
+        const nodeId = request.nodeId;
 
         return co.wrap(function*() {
-                let devices;
-                if (id) {
-                    devices = yield DbDevice.aggregate([
-                        AGGREGATE_PROJECT,
-                        {$match: {id: id}}
-                    ]);
-                } else {
-                    devices = yield DbDevice.aggregate([
-                        AGGREGATE_PROJECT,
-                        {$match: {id: id}}
-                    ]);
+            if (ids) {
+                aggregateParams.push({$match: {id: {$in: ids}}});
                 }
+            if (nodeId) {
+                aggregateParams.push({$match: {nodeId: nodeId}});
+            }
+            if (limit) {
+                aggregateParams.push({$sort: {id: 1}});
+                aggregateParams.push({$limit: limit});
+            }
 
-                return yield Promise.resolve(devices);
+            if (request.sensor !== undefined) {
+                const aggregateMatch = aggregateParams.find((param)=>param['$match']) ? aggregateParams.find((param)=>param['$match']) : {$match: {}};
+                aggregateParams = aggregateParams.filter((param)=>!param['$match']);
+                aggregateMatch['$match']['sensor'] = onlySensor;
+                aggregateParams.push(aggregateMatch);
+            }
+
+            return yield DbDevice.aggregate(aggregateParams);
             }
         )();
     }

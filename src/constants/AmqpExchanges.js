@@ -1,6 +1,11 @@
 const co = require("co");
 
 class AmqpExchanges {
+
+    /**
+     *
+     * @returns {string} "dr.mqtt"
+     */
     static get MQTT_GATEWAY_EXCHANGE() {
         return "dr.mqtt";
     }

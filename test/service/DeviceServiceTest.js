@@ -45,7 +45,7 @@ describe('DeviceServiceTest', function () {
         "use strict";
 
         beforeEach(function () {
-            return DbDevice.find({nodeId: "nodeid", id: "deviceid"}).remove().exec();
+            return DbDevice.find({}).remove().exec();
         });
 
         it('checking routing', function (done) {
@@ -89,7 +89,7 @@ describe('DeviceServiceTest', function () {
         "use strict";
 
         beforeEach(function (done) {
-            DbDevice.find({nodeId: "nodeid", id: "deviceid"}).remove().exec().then(()=> {
+            DbDevice.find({}).remove().exec().then(()=> {
                 return new DbDevice({
                     nodeId: "nodeid",
                     id: "deviceid",
@@ -142,7 +142,106 @@ describe('DeviceServiceTest', function () {
                 sensor: false
             })));
         });
-    })
+    });
 
+    describe.only("rpc test", function () {
+        "use strict";
+
+        beforeEach(function (done) {
+            DbDevice.find({}).remove().exec().then(()=> {
+                return Promise.all(
+                    [
+                        new DbDevice({
+                            nodeId: "nodeid",
+                            id: "deviceid1",
+                            sensor: false,
+                            unit: "unit"
+                        }).save(),
+                        new DbDevice({
+                            nodeId: "nodeid",
+                            id: "deviceid2",
+                            sensor: true,
+                            unit: "unit"
+                        }).save(),
+                        new DbDevice({
+                            nodeId: "nodeid2",
+                            id: "deviceid",
+                            sensor: false,
+                            unit: "unit",
+                            store: {maxAgeMs: 60 * 1000}
+                        }).save(),
+                        new DbDevice({
+                            nodeId: "nodeid3",
+                            id: "deviceid",
+                            sensor: false,
+                            unit: "unit",
+                            store: {maxCount: 100}
+                        }).save(),
+                    ]).then(()=>done());
+            });
+        });
+
+        it("get all devices", function (done) {
+            AmqpHelper.rpcRequest({}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                //expect(response).to.have.deep.property("")
+                expect(response.length).to.equal(4);
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property('nodeId', 'nodeid');
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property('id', 'deviceid1');
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property('sensor', false);
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property('unit', 'unit');
+                done();
+            }).catch(debug);
+        });
+
+        it("get all devices - limit 1", function (done) {
+            AmqpHelper.rpcRequest({limit: 1}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                //expect(response).to.have.deep.property("")
+                expect(response.length).to.equal(1);
+                done();
+            }).catch(debug);
+        });
+
+        it("get all sensors", function (done) {
+            AmqpHelper.rpcRequest({sensor: true}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                //expect(response).to.have.deep.property("")
+                expect(response.length).to.equal(1);
+                expect(response[0]).to.have.deep.property("id", "deviceid2");
+                done();
+            }).catch(debug);
+        });
+
+        it("get all actors", function (done) {
+            AmqpHelper.rpcRequest({sensor: false}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                //expect(response).to.have.deep.property("")
+                expect(response.length).to.equal(3);
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property("sensor", false);
+                done();
+            }).catch(debug);
+        });
+
+        it("get all for node 'nodeid'", function (done) {
+            AmqpHelper.rpcRequest({nodeId: 'nodeid'}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                expect(response.length).to.equal(2);
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property("sensor", false);
+                expect(response.find((device)=>device.id === 'deviceid2')).to.have.deep.property("sensor", true);
+                done();
+            }).catch(debug);
+        });
+
+        it("set store option by date", function (done) {
+            AmqpHelper.rpcRequest({
+                nodeId: "nodeid",
+                id: "deviceid2",
+                store: {maxAgeMs: 60 * 1000}
+            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_SET_DEVICE_STORAGE, DummyAmqpChannel).then((response)=> {
+                AmqpHelper.rpcRequest({nodeId: 'nodeid'}, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                    expect(response.length).to.equal(2);
+                    expect(response.find((device)=>device.id === 'deviceid2')).to.have.deep.property("store.maxAgeMs", 60000);
+                    done();
+                }).catch(debug);
+            }).catch(debug);
+        });
+
+    });
 });
 

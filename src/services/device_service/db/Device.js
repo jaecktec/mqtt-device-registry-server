@@ -7,7 +7,7 @@ module.exports = mongoose.model('Device', new Schema({
     unit: String,
     nodeId: String,
     store: {
-        max: Number,
-        age: Date
+        maxCount: Number,
+        maxAgeMs: Number
     }
 }));

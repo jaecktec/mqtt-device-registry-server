@@ -11,15 +11,20 @@ class DeviceServiceQueue {
         return "dr.device.update";
     }
 
-    static get deviceRpcQueue() {
-        return "dr.device.rpc.get"
+    static get deviceRpcGetQueue() {
+        return "dr.device.rpc.get";
+    }
+
+    static get deviceRpcSetQueue() {
+        return "dr.device.rpc.set";
     }
 
     static createQueues(channel) {
         channel.assertQueue(DeviceServiceQueue.mainQueue, {exclusive: false, durable: true});
         channel.assertQueue(DeviceServiceQueue.deviceConnectedQueue, {exclusive: false, durable: true});
         channel.assertQueue(DeviceServiceQueue.deviceReconnectedQueue, {exclusive: false, durable: true});
-        channel.assertQueue(DeviceServiceQueue.deviceRpcQueue, {exclusive: false, durable: true});
+        channel.assertQueue(DeviceServiceQueue.deviceRpcGetQueue, {exclusive: false, durable: true});
+        channel.assertQueue(DeviceServiceQueue.deviceRpcSetQueue, {exclusive: false, durable: true});
     }
 }
 module.exports = DeviceServiceQueue;

@@ -166,18 +166,18 @@ class NodeService {
                     }
                 }
             ];
-            let nodes;
+
             if (limit) {
-                aggregateParams.push({$sort: {first_seen: 1, posts: 1}});
+                aggregateParams.push({$sort: {first_seen: 1}});
                 aggregateParams.push({$limit: limit});
             }
             if (id) {
                 aggregateParams.push({$match: {id: id}});
-            } else if (onlyConnected) {
+            }
+            if (onlyConnected) {
                 aggregateParams.push({$match: {uptime: {$gt: 0}}});
             }
-            nodes = yield DbNode.aggregate(aggregateParams);
-
+            let nodes = yield DbNode.aggregate(aggregateParams);
             AmqpHelper.rpcRespond(nodes, request, channel);
         })();
     }
