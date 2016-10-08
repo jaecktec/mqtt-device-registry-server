@@ -42,7 +42,9 @@ class NodeService {
             channel.consume(NodeServiceQueue.nodeConnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createNode), {noAck: false});
             channel.consume(NodeServiceQueue.nodeReconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__refreshNode), {noAck: false});
             channel.consume(NodeServiceQueue.nodeDisconnectedQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__updateDisconnected), {noAck: false});
-            channel.consume(NodeServiceQueue.nodeRpcQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__handleGet), {noAck: false});
+
+            // RPC
+            channel.consume(NodeServiceQueue.nodeRpcQueue, (msg)=> AmqpHelper.handleRpcRquest(msg, channel, _this.__handleGet), {noAck: false});
 
             // MONGODB connect
             if (!mongoose.connection.readyState) {
@@ -148,10 +150,10 @@ class NodeService {
     }
 
 
-    __handleGet(request, channel) {
-        const id = request.content.id;
-        const limit = request.content.limit;
-        const onlyConnected = request.content.onlyConnected;
+    __handleGet(request) {
+        const id = request.id;
+        const limit = request.limit;
+        const onlyConnected = request.onlyConnected;
 
         return co.wrap(function*() {
             let aggregateParams = [
@@ -178,7 +180,7 @@ class NodeService {
                 aggregateParams.push({$match: {uptime: {$gt: 0}}});
             }
             let nodes = yield DbNode.aggregate(aggregateParams);
-            AmqpHelper.rpcRespond(nodes, request, channel);
+            return yield Promise.resolve(nodes);
         })();
     }
 
