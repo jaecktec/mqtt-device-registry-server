@@ -50,7 +50,7 @@ describe('NodeServiceTest', function () {
 
         beforeEach(function () {
             "use strict";
-            return DbNode.find({id: "nodeid"}).remove().exec();
+            return DbNode.find({}).remove().exec();
         });
 
         it('checking correct routing', function (done) {
@@ -278,7 +278,6 @@ describe('NodeServiceTest', function () {
                         expect(d).to.not.be.null;
                         expect(d).to.have.deep.property("id", "nodeid");
                         expect(d["first_seen"]).to.equalDate(new Date(2000, 12, 1));
-                        expect(d["last_seen"]).to.afterDate(new Date(2000, 12, 1));
                         expect(d.disconnected).to.not.null;
                         done();
                     }).catch(debug);

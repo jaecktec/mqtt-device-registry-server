@@ -142,7 +142,6 @@ class NodeService {
      */
     __updateDisconnected(msg) {
         return co.wrap(function*(_this, msg) {
-            console.log("__updateDisconnected", msg);
             let node = yield DbNode.findOne({id: msg.nodeId});
             node.disconnected = new Date();
             yield node.save();
