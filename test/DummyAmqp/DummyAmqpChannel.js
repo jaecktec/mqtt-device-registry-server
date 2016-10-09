@@ -94,6 +94,9 @@ class DummyAmqpChannel {
             this.debugBindToAfterBindings.filter((bind)=> {
                 return debugBindigAfter.find((bi)=>bi.queueName == bind.queueName && bi.exchangeName == bind.exchangeName && bi.routingKey == bind.routingKey);
             }).map((bind)=>bind.cb).forEach((cb)=>cb());
+            this.debugBindToAfterBindings = this.debugBindToAfterBindings.filter((bind)=> {
+                return !debugBindigAfter.find((bi)=>bi.queueName == bind.queueName && bi.exchangeName == bind.exchangeName && bi.routingKey == bind.routingKey);
+            })
         });
 
         return Promise.all(consumePromises);
