@@ -18,6 +18,7 @@ mockrequire('amqplib', DummyAmqp);
 
 // Require Service to test
 const ValueService = require("../../src/services/value_service/ValueService");
+const DeviceService = require("../../src/services/device_service/DeviceService");
 
 // Require Constants
 const AmqpExchanges = require("../../src/constants/AmqpExchanges");
@@ -30,6 +31,9 @@ const AmqpHelper = require("../../src/helper/AmqpHelper");
 
 // Require MongoDb model
 const DbValue = require("../../src/services/value_service/db/Value");
+const DbDevice = require("../../src/services/device_service/db/Device");
+const DbNode = require("../../src/services/node_service/db/Node");
+
 
 describe('ValueServiceTest', function () {
     before(function () {
@@ -45,12 +49,72 @@ describe('ValueServiceTest', function () {
         done();
     });
 
-    describe('value message', function () {
+    describe.only('value message', function () {
 
-        beforeEach(function () {
+        before(function () {
+            return DeviceService.start(process.env.MONGODB_URI, "");
+        });
+
+        after(function () {
+            DeviceService.stop();
+        });
+
+        beforeEach(function (done) {
             "use strict";
             // clear all values
-            return DbValue.find({}).remove().exec();
+            Promise.all([
+                DbValue.find({}).remove().exec(),
+                DbDevice.find({}).remove().exec(),
+                DbNode.find({}).remove().exec()
+            ]).then(()=> {
+                Promise.all([
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(1),
+                        value: {num: 1}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(2),
+                        value: {num: 2}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(3),
+                        value: {num: 3}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(4),
+                        value: {num: 4}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(5),
+                        value: {num: 5}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                        created: new Date(6),
+                        value: {num: 6}
+                    }).save(),
+                    new DbDevice({
+                        id: "deviceid",
+                        sensor: true,
+                        unit: "001",
+                        nodeId: "nodeid2",
+                        store: {maxCount: 6, maxAgeMs: new Date().getMilliseconds() + 1}
+                    }).save(),
+                    new DbDevice({id: "deviceid", sensor: true, unit: "001", nodeId: "nodeid"}).save(),
+                    new DbNode({id: "nodeid2", first_seen: new Date(0), last_seen: new Date(6)}).save()
+                ]).then(()=>done());
+            });
         });
 
         it('checking correct routing', function (done) {
@@ -99,5 +163,35 @@ describe('ValueServiceTest', function () {
                     message: {value: "test"}
                 })));
         });
+
+        it('checking if value stored with limit', function (done) {
+            "use strict";
+
+            DummyAmqpChannel.debugBindToAfter(
+                ValueServiceQueue.newValueQueue,
+                AmqpExchanges.VALUE_API_EXCHANGE,
+                ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW, ()=> {
+                    DbValue.find({
+                        nodeId: "nodeid2",
+                        deviceId: "deviceid",
+                    }).then(function (d) {
+                        expect(d.length).to.equal(6);
+                        expect(d.find((elem)=>elem.value.value == "test2")).to.be.not.undefined;
+                        done();
+                    }).catch(debug);
+                });
+
+
+            DummyAmqpChannel.publish(
+                AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
+                MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY,
+                new Buffer(JSON.stringify({
+                    nodeId: "nodeid2",
+                    deviceId: "deviceid",
+                    message: {value: "test2"}
+                })));
+        });
+
+
     });
 });

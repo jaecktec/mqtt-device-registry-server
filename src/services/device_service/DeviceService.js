@@ -139,7 +139,7 @@ class DeviceService {
     __handleGet(request) {
         let aggregateParams = [{
             $project: {
-                _id: 0,
+                _id: 1,
                 id: 1,
                 sensor: 1,
                 unit: 1,
@@ -180,7 +180,7 @@ class DeviceService {
                 aggregateMatch['$match']['sensor'] = onlySensor;
                 aggregateParams.push(aggregateMatch);
             }
-
+            debug("querieing: ", aggregateParams);
             return yield DbDevice.aggregate(aggregateParams);
             }
         )();

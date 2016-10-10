@@ -73,27 +73,33 @@ class ValueService {
      * @private
      */
     __createNewValue(msg, channel) {
-        return co.wrap(function*(_this, msg) {
-            let device = yield AmqpHelper.rpcRequest({
-                nodeId: 'nodeid',
-                id: 'deviceid1'
-            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, channel);
-
-            let newValue = new DbValue({
+        return co.wrap(function*(_this, msg, channel) {
+            debug("create new value", msg);
+            yield new DbValue({
                 nodeId: msg.nodeId,
                 deviceId: msg.deviceId,
                 value: msg.message,
                 created: new Date()
-            });
-            yield newValue.save();
+            }).save();
 
-            if (device.store.maxCount) {
-                let all = yield DbValue.find().sort({_id: 1});
-                all = all.slice(device.store.maxCount - 1, all.lengh);
-                yield DbValue.remove({_id: {$in: all.map((item)=>item._id)}});
+            let device = (yield AmqpHelper.rpcRequest({
+                nodeId: msg.nodeId,
+                id: msg.deviceId
+            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, channel))[0];
+
+            let valuesCount = yield DbValue.count({
+                nodeId: msg.nodeId,
+                deviceId: msg.deviceId
+            });
+            debug("asdasd", device, valuesCount);
+            if (device.store && device.store.maxCount && device.store.maxCount < valuesCount) {
+                let all = yield DbValue.find().sort({_id: -1});
+                debug("Deleting entries: ", all.slice(device.store.maxCount, all.lengh).map((item)=>item._id));
+                yield DbValue.remove({_id: {$in: all.slice(device.store.maxCount, all.lengh).map((item)=>item._id)}});
             }
             debug("new value saved");
-        })(this, msg);
+            return yield Promise.resolve();
+        })(this, msg, channel);
     }
 }
 
