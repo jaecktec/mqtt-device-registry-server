@@ -10,6 +10,8 @@ const AmqpHelper = require("../../helper/AmqpHelper");
 const MqttGatewayRoutingKey = require("../mqtt_gateway/constants/MqttGatewayRoutingKey");
 const ValueServiceRoutingKey = require("./constants/ValueServiceRoutingKey");
 
+const DeviceServiceRoutingKey = require("../device_service/constants/DeviceServiceRoutingKey");
+
 const DbValue = require("./db/Value");
 
 class ValueService {
@@ -70,8 +72,13 @@ class ValueService {
      * @returns {*} promise
      * @private
      */
-    __createNewValue(msg) {
+    __createNewValue(msg, channel) {
         return co.wrap(function*(_this, msg) {
+            let device = yield AmqpHelper.rpcRequest({
+                nodeId: 'nodeid',
+                id: 'deviceid1'
+            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, channel);
+
             let newValue = new DbValue({
                 nodeId: msg.nodeId,
                 deviceId: msg.deviceId,
@@ -79,6 +86,12 @@ class ValueService {
                 created: new Date()
             });
             yield newValue.save();
+
+            if (device.store.maxCount) {
+                let all = yield DbValue.find().sort({_id: 1});
+                all = all.slice(device.store.maxCount - 1, all.lengh);
+                yield DbValue.remove({_id: {$in: all.map((item)=>item._id)}});
+            }
             debug("new value saved");
         })(this, msg);
     }

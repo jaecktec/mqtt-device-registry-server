@@ -144,7 +144,7 @@ describe('DeviceServiceTest', function () {
         });
     });
 
-    describe.only("rpc test", function () {
+    describe("rpc test", function () {
         "use strict";
 
         beforeEach(function (done) {
