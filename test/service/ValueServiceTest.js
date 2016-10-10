@@ -49,7 +49,7 @@ describe('ValueServiceTest', function () {
         done();
     });
 
-    describe.only('value message', function () {
+    describe('value message', function () {
 
         before(function () {
             return DeviceService.start(process.env.MONGODB_URI, "");
