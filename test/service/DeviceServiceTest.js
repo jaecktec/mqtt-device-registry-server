@@ -144,7 +144,7 @@ describe('DeviceServiceTest', function () {
         });
     });
 
-    describe("rpc test", function () {
+    describe.only("rpc test", function () {
         "use strict";
 
         beforeEach(function (done) {
@@ -224,6 +224,18 @@ describe('DeviceServiceTest', function () {
                 expect(response.length).to.equal(2);
                 expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property("sensor", false);
                 expect(response.find((device)=>device.id === 'deviceid2')).to.have.deep.property("sensor", true);
+                done();
+            }).catch(debug);
+        });
+
+
+        it("get all for node 'nodeid' and device 'deviceid1'", function (done) {
+            AmqpHelper.rpcRequest({
+                nodeId: 'nodeid',
+                id: 'deviceid1'
+            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, DummyAmqpChannel).then((response)=> {
+                expect(response.length).to.equal(1);
+                expect(response.find((device)=>device.id === 'deviceid1')).to.have.deep.property("sensor", false);
                 done();
             }).catch(debug);
         });

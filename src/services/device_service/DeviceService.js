@@ -148,6 +148,7 @@ class DeviceService {
             }
         }];
         const ids = request.ids;
+        const id = request.id;
         const limit = request.limit;
         const onlySensor = request.sensor;
         const nodeId = request.nodeId;
@@ -157,7 +158,16 @@ class DeviceService {
                 aggregateParams.push({$match: {id: {$in: ids}}});
                 }
             if (nodeId) {
-                aggregateParams.push({$match: {nodeId: nodeId}});
+                const aggregateMatch = aggregateParams.find((param)=>param['$match']) ? aggregateParams.find((param)=>param['$match']) : {$match: {}};
+                aggregateParams = aggregateParams.filter((param)=>!param['$match']);
+                aggregateMatch['$match']['nodeId'] = nodeId;
+                aggregateParams.push(aggregateMatch);
+            }
+            if (id) {
+                const aggregateMatch = aggregateParams.find((param)=>param['$match']) ? aggregateParams.find((param)=>param['$match']) : {$match: {}};
+                aggregateParams = aggregateParams.filter((param)=>!param['$match']);
+                aggregateMatch['$match']['id'] = id;
+                aggregateParams.push(aggregateMatch);
             }
             if (limit) {
                 aggregateParams.push({$sort: {id: 1}});
