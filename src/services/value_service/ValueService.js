@@ -31,10 +31,12 @@ class ValueService {
             yield [
                 channel.bindQueue(ValueServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
                 channel.bindQueue(ValueServiceQueue.newValueQueue, AmqpExchanges.VALUE_API_EXCHANGE, ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW),
+                channel.bindQueue(ValueServiceQueue.valueRpcQueue, AmqpExchanges.VALUE_API_EXCHANGE, ValueServiceRoutingKey.ROUTING_KEY_RPC_GET_VALUE),
             ];
 
             channel.consume(ValueServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onValueMessage), {noAck: false});
             channel.consume(ValueServiceQueue.newValueQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__createNewValue), {noAck: false});
+            channel.consume(ValueServiceQueue.valueRpcQueue, (msg)=> AmqpHelper.handleRpcRquest(msg, channel, _this.__handleGet), {noAck: false});
 
             // MONGODB connect
             if (!mongoose.connection.readyState) {
@@ -91,7 +93,6 @@ class ValueService {
                 nodeId: msg.nodeId,
                 deviceId: msg.deviceId
             });
-            debug("asdasd", device, valuesCount);
             if (device.store && device.store.maxCount && device.store.maxCount < valuesCount) {
                 let all = yield DbValue.find().sort({_id: -1});
                 debug("Deleting entries: ", all.slice(device.store.maxCount, all.lengh).map((item)=>item._id));
@@ -100,6 +101,17 @@ class ValueService {
             debug("new value saved");
             return yield Promise.resolve();
         })(this, msg, channel);
+    }
+
+    __handleGet(request) {
+        let nodeId = request.nodeId;
+        let deviceId = request.deviceId;
+        return co.wrap(function*() {
+            return yield Promise.resolve(yield DbValue.find({
+                nodeId: nodeId,
+                deviceId: deviceId
+            }));
+        })();
     }
 }
 

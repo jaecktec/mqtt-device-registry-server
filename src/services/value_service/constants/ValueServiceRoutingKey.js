@@ -6,6 +6,10 @@ class ValueServiceRoutingKey {
         return "dr.api.value.new";
     }
 
+    static get ROUTING_KEY_RPC_GET_VALUE() {
+        return "dr.api.rpc.value.get";
+    }
+
 }
 
 module.exports = ValueServiceRoutingKey;

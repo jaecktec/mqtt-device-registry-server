@@ -192,6 +192,73 @@ describe('ValueServiceTest', function () {
                 })));
         });
 
+    });
 
+    describe('rpc tests', function () {
+        "use strict";
+
+        beforeEach(function (done) {
+            "use strict";
+            // clear all values
+            Promise.all([
+                DbValue.find({}).remove().exec(),
+                DbDevice.find({}).remove().exec(),
+                DbNode.find({}).remove().exec()
+            ]).then(()=> {
+                Promise.all([
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(1),
+                        value: {num: 1}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(2),
+                        value: {num: 2}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(3),
+                        value: {num: 3}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(4),
+                        value: {num: 4}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(5),
+                        value: {num: 5}
+                    }).save(),
+                    new DbValue({
+                        nodeId: "nodeid",
+                        deviceId: "deviceid",
+                        created: new Date(6),
+                        value: {num: 6}
+                    }).save(),
+                    new DbDevice({id: "deviceid", sensor: true, unit: "001", nodeId: "nodeid"}).save(),
+                    new DbNode({id: "nodeid2", first_seen: new Date(0), last_seen: new Date(6)}).save()
+                ]).then(()=>done());
+            });
+        });
+
+        it('load values for nodeId "nodeid" and deviceId "deviceid"', function (done) {
+            AmqpHelper.rpcRequest({
+                nodeId: "nodeid",
+                deviceId: "deviceid"
+            }, AmqpExchanges.VALUE_API_EXCHANGE, ValueServiceRoutingKey.ROUTING_KEY_RPC_GET_VALUE, DummyAmqpChannel).then((response)=> {
+                debug(response);
+                expect(response.length).to.equal(6);
+                expect(response[0]).to.have.deep.property("nodeId", "nodeid");
+                expect(response[0]).to.have.deep.property("deviceId", "deviceid");
+                done();
+            }).catch(debug);
+        });
     });
 });
