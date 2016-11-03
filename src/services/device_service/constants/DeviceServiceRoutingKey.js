@@ -6,8 +6,16 @@ class DeviceServiceRoutingKey {
         return "dr.api.device.connect";
     }
 
+    static get ROUTING_KEY_DEVICE_CONNECT_STORED() {
+        return "dr.api.device.connect.stored";
+    }
+
     static get  ROUTING_KEY_DEVICE_UPDATE() {
         return "dr.api.device.update";
+    }
+
+    static get  ROUTING_KEY_DEVICE_UPDATE_STORED() {
+        return "dr.api.device.update.stored";
     }
 
     static get ROUTING_KEY_RPC_GET_DEVICE() {

@@ -33,7 +33,7 @@ class NodeService {
                 channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.mainQueue, AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY),
-                channel.bindQueue(NodeServiceQueue.nodeConnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY),
+                channel.bindQueue(NodeServiceQueue.nodeConnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED),
                 channel.bindQueue(NodeServiceQueue.nodeReconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.nodeDisconnectedQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY),
                 channel.bindQueue(NodeServiceQueue.nodeRpcQueue, AmqpExchanges.NODE_API_EXCHANGE, NodeServiceRoutingKey.ROUTING_KEY_RPC_GET_NODE)];
@@ -61,7 +61,7 @@ class NodeService {
 
     /**
      * checks if node already exists. If not, publishes amqp message to exchange with routin key:
-     * -> not existent: NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY
+     * -> not existent: NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED
      * -> exists: NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY
      * @param msg amqp message
      * @param channel amqp chanel
@@ -74,12 +74,14 @@ class NodeService {
             let node = yield DbNode.findOne({id: msg.nodeId});
             if (!node) {
                 // publish create Node
+                debug("Publishing 'create node'");
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
-                    NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_ROUTING_KEY,
+                    NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED,
                     AmqpHelper.objToBuffer(msg));
             } else {
                 // publish update Node
+                debug("Publishing 'update node'");
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_ROUTING_KEY,
@@ -88,6 +90,7 @@ class NodeService {
 
             if (Object.keys(msg).length == 1 && msg.nodeId !== undefined) {
                 // node disconnected
+                debug("Publishing 'node disconnected'");
                 channel.publish(
                     AmqpExchanges.NODE_API_EXCHANGE,
                     NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_ROUTING_KEY,
@@ -103,18 +106,19 @@ class NodeService {
      * @returns {*}
      * @private
      */
-    __createNode(msg) {
+    __createNode(msg, channel) {
         return co.wrap(function*(_this, msg) {
             debug("__createNode", msg);
-            let node = yield DbNode.findOne({id: msg.nodeId});
-            if (!node) {
-                yield new DbNode({
-                    id: msg.nodeId,
-                    first_seen: new Date(),
-                    last_seen: new Date(),
-                    disconnected: null
-                }).save();
-            }
+            let node = yield new DbNode({
+                id: msg.nodeId,
+                first_seen: new Date(),
+                last_seen: new Date(),
+                disconnected: null
+            }).save();
+            channel.publish(
+                AmqpExchanges.NODE_API_EXCHANGE,
+                NodeServiceRoutingKey.ROUTING_KEY_NODE_CONNECTED_STORED,
+                AmqpHelper.objToBuffer(node));
         })(this, msg);
     }
 
@@ -124,13 +128,19 @@ class NodeService {
      * @returns {*} promise
      * @private
      */
-    __refreshNode(msg) {
+    __refreshNode(msg, channel) {
         return co.wrap(function*(_this, msg) {
-            debug("__refreshNode", JSON.stringify(msg));
+            debug("__refreshNode", msg);
             let node = yield DbNode.findOne({id: msg.nodeId});
             node.last_seen = new Date();
             node.disconnected = null;
             yield node.save();
+
+            channel.publish(
+                AmqpExchanges.NODE_API_EXCHANGE,
+                NodeServiceRoutingKey.ROUTING_KEY_NODE_RECONNECTED_STORED_ROUTING_KEY,
+                AmqpHelper.objToBuffer(node));
+
         })(this, msg);
     }
 
@@ -140,11 +150,15 @@ class NodeService {
      * @returns {*} promise
      * @private
      */
-    __updateDisconnected(msg) {
+    __updateDisconnected(msg, channel) {
         return co.wrap(function*(_this, msg) {
             let node = yield DbNode.findOne({id: msg.nodeId});
             node.disconnected = new Date();
             yield node.save();
+            channel.publish(
+                AmqpExchanges.NODE_API_EXCHANGE,
+                NodeServiceRoutingKey.ROUTING_KEY_NODE_DISCONNECTED_STORED_ROUTING_KEY,
+                AmqpHelper.objToBuffer(node));
         })(this, msg);
     }
 

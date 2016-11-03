@@ -90,21 +90,22 @@ class DeviceService {
      * @returns {*} promise
      * @private
      */
-    __createDevice(msg) {
+    __createDevice(msg, channel) {
         //noinspection JSCheckFunctionSignatures
-        return co.wrap(function*(_this, msg) {
-            let device = yield DbDevice.findOne({nodeId: msg.nodeId, id: msg.id});
-            if (!device) {
-                let newDevice = new DbDevice({
-                    nodeId: msg.nodeId,
-                    id: msg.id,
-                    sensor: msg.sensor,
-                    unit: msg.unit
-                });
-                yield newDevice.save();
-                debug("New Device saved");
-            }
-        })(this, msg);
+        return co.wrap(function*(_this, msg, channel) {
+            let newDevice = new DbDevice({
+                nodeId: msg.nodeId,
+                id: msg.id,
+                sensor: msg.sensor,
+                unit: msg.unit
+            });
+            let device = yield newDevice.save();
+            debug("New Device saved");
+            channel.publish(
+                AmqpExchanges.DEVICE_API_EXCHANGE,
+                DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_CONNECT_STORED,
+                AmqpHelper.objToBuffer(device));
+        })(this, msg, channel);
     }
 
     /**
@@ -113,14 +114,18 @@ class DeviceService {
      * @returns {*} promise
      * @private
      */
-    __refreshDevice(msg) {
+    __refreshDevice(msg, channel) {
         //noinspection JSCheckFunctionSignatures
-        return co.wrap(function*(_this, msg) {
+        return co.wrap(function*(_this, msg, channel) {
             let device = yield DbDevice.findOne({nodeId: msg.nodeId, id: msg.id});
             device.sensor = msg.sensor;
             device.unit = msg.unit;
             yield device.save();
-        })(this, msg);
+            channel.publish(
+                AmqpExchanges.DEVICE_API_EXCHANGE,
+                DeviceServiceRoutingKey.ROUTING_KEY_DEVICE_UPDATE_STORED,
+                AmqpHelper.objToBuffer(device));
+        })(this, msg, channel);
     }
 
     __handleSet(request) {

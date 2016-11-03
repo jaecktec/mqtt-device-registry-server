@@ -1,14 +1,8 @@
-const mockrequire = require('mock-require');
 const AmqpHelper = require("../../src/helper/AmqpHelper");
 const expect = require('chai').expect;
 const assert = require("assert");
 var debug = require('debug')('mqtt-device-registry.test.AmqpHelperTest');
 
-// Mocking AMQP
-const DummyAmqp = require("../DummyAmqp/DummyAmqp");
-const DummyAmqpChannel = require("../DummyAmqp/DummyAmqpChannel");
-const DummyAmqpConnection = require("../DummyAmqp/DummyAmqpConnection");
-//mockrequire('amqplib', DummyAmqp);
 
 const amqp = require('amqplib');
 const co = require("co");

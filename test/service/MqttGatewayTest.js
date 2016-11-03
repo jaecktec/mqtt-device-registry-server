@@ -7,11 +7,9 @@ const chai = require("chai");
 chai.use(require('chai-datetime'));
 const expect = chai.expect;
 
-// Mocking AMQP
-const DummyAmqp = require("../DummyAmqp/DummyAmqp");
-const DummyAmqpChannel = require("../DummyAmqp/DummyAmqpChannel");
-const DummyAmqpConnection = require("../DummyAmqp/DummyAmqpConnection");
-mockrequire('amqplib', DummyAmqp);
+const amqp = require('amqplib');
+const co = require("co");
+const uuid = require('uuid');
 
 // Mocking MQTT
 const DummyMqtt = require("../DummyMqtt/DummyMqtt");
@@ -24,55 +22,80 @@ const MqttGatewayRoutingKey = require("../../src/services/mqtt_gateway/constants
 const MqttGatewayBrokerTopics = require("../../src/services/mqtt_gateway/constants/MqttGatewayBrokerTopics");
 const MqttGateway = require("../../src/services/mqtt_gateway/MqttGateway");
 
+const AmqpTestHelper = require("../AmqpTestHelper/AmqpTestHelper");
+
 describe("MqttGatewayTest", function () {
     before(function (done) {
-        DummyMqttClient.subscribeOnce(MqttGatewayBrokerTopics.TOPIC_UPDATE_REGISTER, function () {
-            "use strict";
-            done();
-        });
-        MqttGateway.start("", "");
+        MqttGateway.start(process.env.RABBIT_MQ_URI, "").then(()=> {
+                "use strict";
+                DummyMqttClient.subscribeOnce(MqttGatewayBrokerTopics.TOPIC_UPDATE_REGISTER, () => {
+                    "use strict";
+                    done()
+                });
+                MqttGateway.updateRegistrations();
+            }
+        );
     });
+
+    let connection;
+    let channel;
 
     beforeEach(function (done) {
-        DummyAmqpChannel.clear("test");
-        done();
+        co(function *() {
+            connection = yield amqp.connect(process.env.RABBIT_MQ_URI);
+            channel = yield connection.createChannel();
+        }).then(()=>done()).catch(console.log);
     });
 
-    var DEVICE_REGISTER_MSG = '{"unit":"unit","sensor":1,"uuid":"deviceid"}';
+    const DEVICE_REGISTER_MSG = '{"unit":"unit","sensor":1,"uuid":"deviceid"}';
     it("Register message", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_ROUTING_KEY);
-        DummyAmqpChannel.consume("test", function (msgBuffer) {
-            let msg = AmqpHelper.bufferToObj(msgBuffer.content);
+
+        AmqpTestHelper.createQueueAndBindOnce(
+            channel,
+            ()=> {
+                DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_REGISTER.replace("+", "nodeid"), DEVICE_REGISTER_MSG);
+            },
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
+            MqttGatewayRoutingKey.DEVICE_ROUTING_KEY
+        ).then((msg)=> {
             expect(msg.nodeId).to.equal("nodeid");
             expect(msg.id).to.equal("deviceid");
             expect(msg.unit).to.equal("unit");
             expect(msg.sensor).to.equal(true);
             done();
         });
-        DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_REGISTER.replace("+", "nodeid"), DEVICE_REGISTER_MSG);
     });
 
-    var DEVICE_VALUE_MSG = '{"value": "test"}';
-    it("Value message", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY);
-        DummyAmqpChannel.consume("test", function (msgBuffer) {
-            let msg = AmqpHelper.bufferToObj(msgBuffer.content);
+
+    const DEVICE_VALUE_MSG = '{"value": "test"}';
+    it("Value Message", function (done) {
+        AmqpTestHelper.createQueueAndBindOnce(
+            channel,
+            ()=> {
+                DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_DEVICE.replace("+", "nodeid").replace("+", "deviceid"), DEVICE_VALUE_MSG);
+            },
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
+            MqttGatewayRoutingKey.DEVICE_VALUE_ROUTING_KEY
+        ).then((msg)=> {
             expect(msg.nodeId).to.equal("nodeid");
             expect(msg.deviceId).to.equal("deviceid");
             expect(msg.message.value).to.equal("test");
             done();
         });
-        DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_DEVICE.replace("+", "nodeid").replace("+", "deviceid"), DEVICE_VALUE_MSG);
     });
 
+
     it("Node disconnected", function (done) {
-        DummyAmqpChannel.bindQueue("test", AmqpExchanges.MQTT_GATEWAY_EXCHANGE, MqttGatewayRoutingKey.NODE_ROUTING_KEY);
-        DummyAmqpChannel.consume("test", function (msgBuffer) {
-            let msg = AmqpHelper.bufferToObj(msgBuffer.content);
+        AmqpTestHelper.createQueueAndBindOnce(
+            channel,
+            ()=> {
+                DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_UNREGISTER.replace("+", "nodeid"));
+            },
+            AmqpExchanges.MQTT_GATEWAY_EXCHANGE,
+            MqttGatewayRoutingKey.NODE_ROUTING_KEY
+        ).then((msg)=> {
             expect(msg.nodeId).to.equal("nodeid");
             done();
         });
-        DummyMqttClient.publish(MqttGatewayBrokerTopics.TOPIC_UNREGISTER.replace("+", "nodeid"));
     });
-
 });

@@ -1,5 +1,8 @@
 const co = require("co");
 
+/**
+ * Exchange names and creation fn for the Exchanges
+ */
 class AmqpExchanges {
 
     /**
@@ -10,22 +13,43 @@ class AmqpExchanges {
         return "dr.mqtt";
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     static get NODE_API_EXCHANGE() {
         return "dr.api.node";
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     static get DEVICE_API_EXCHANGE() {
         return "dr.api.device";
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     static get VALUE_API_EXCHANGE() {
         return "dr.api.value";
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     static get RPC_RETURN_EXCHANGE() {
         return "dr.rpc";
     }
 
+    /**
+     * Creates all Exchanges
+     * @param channel
+     * @returns {Promise}
+     */
     static createExchanges(channel) {
         return co.wrap(function*() {
             yield [channel.assertExchange(AmqpExchanges.MQTT_GATEWAY_EXCHANGE, 'direct', {}),

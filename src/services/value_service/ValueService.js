@@ -10,7 +10,7 @@ const AmqpHelper = require("../../helper/AmqpHelper");
 const MqttGatewayRoutingKey = require("../mqtt_gateway/constants/MqttGatewayRoutingKey");
 const ValueServiceRoutingKey = require("./constants/ValueServiceRoutingKey");
 
-const DeviceServiceRoutingKey = require("../device_service/constants/DeviceServiceRoutingKey");
+//const DeviceServiceRoutingKey = require("../device_service/constants/DeviceServiceRoutingKey");
 
 const DbValue = require("./db/Value");
 
@@ -25,6 +25,7 @@ class ValueService {
             channel.prefetch(1);
             channel.assertQueue(ValueServiceQueue.mainQueue, {exclusive: false, durable: true});
             channel.assertQueue(ValueServiceQueue.newValueQueue, {exclusive: false, durable: true});
+            channel.assertQueue(ValueServiceQueue.valueRpcQueue, {exclusive: false, durable: true});
 
             yield AmqpExchanges.createExchanges(channel);
 
@@ -77,28 +78,32 @@ class ValueService {
     __createNewValue(msg, channel) {
         return co.wrap(function*(_this, msg, channel) {
             debug("create new value", msg);
-            yield new DbValue({
+            let value = yield new DbValue({
                 nodeId: msg.nodeId,
                 deviceId: msg.deviceId,
                 value: msg.message,
                 created: new Date()
             }).save();
 
-            let device = (yield AmqpHelper.rpcRequest({
-                nodeId: msg.nodeId,
-                id: msg.deviceId
-            }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, channel))[0];
+            // disabled because cant test it
+            // let device = (yield AmqpHelper.rpcRequest({
+            //     nodeId: msg.nodeId,
+            //     id: msg.deviceId
+            // }, AmqpExchanges.DEVICE_API_EXCHANGE, DeviceServiceRoutingKey.ROUTING_KEY_RPC_GET_DEVICE, channel))[0];
+            // let valuesCount = yield DbValue.count({
+            //     nodeId: msg.nodeId,
+            //     deviceId: msg.deviceId
+            // });
+            // if (device.store && device.store.maxCount && device.store.maxCount < valuesCount) {
+            //     let all = yield DbValue.find().sort({_id: -1});
+            //     let removeValues = all.slice(device.store.maxCount, all.length);
+            //     yield Promise.all(removeValues.map(value => value.remove()));
+            // }
 
-            let valuesCount = yield DbValue.count({
-                nodeId: msg.nodeId,
-                deviceId: msg.deviceId
-            });
-            if (device.store && device.store.maxCount && device.store.maxCount < valuesCount) {
-                let all = yield DbValue.find().sort({_id: -1});
-                debug("Deleting entries: ", all.slice(device.store.maxCount, all.lengh).map((item)=>item._id));
-                yield DbValue.remove({_id: {$in: all.slice(device.store.maxCount, all.lengh).map((item)=>item._id)}});
-            }
-            debug("new value saved");
+            channel.publish(
+                AmqpExchanges.VALUE_API_EXCHANGE,
+                ValueServiceRoutingKey.ROUTING_KEY_VALUE_NEW_STORED,
+                AmqpHelper.objToBuffer(value));
             return yield Promise.resolve();
         })(this, msg, channel);
     }
@@ -107,10 +112,11 @@ class ValueService {
         let nodeId = request.nodeId;
         let deviceId = request.deviceId;
         return co.wrap(function*() {
-            return yield Promise.resolve(yield DbValue.find({
+            let values = yield DbValue.find({
                 nodeId: nodeId,
                 deviceId: deviceId
-            }));
+            });
+            return yield Promise.resolve(values);
         })();
     }
 }

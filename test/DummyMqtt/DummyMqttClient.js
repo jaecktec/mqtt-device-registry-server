@@ -11,10 +11,12 @@ class DummyMqttClient {
     }
 
     subscribe(topic) {
+        debug("Subscribing to %s", topic);
         this.subscriptions.push(mqtt_regex(topic).regex);
     }
 
     subscribeOnce(topic, handler) {
+        debug("Subsribing once to %s", topic);
         this.onceSubscriptions.push({topic: mqtt_regex(topic).regex, handler: handler});
     }
 

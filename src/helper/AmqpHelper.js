@@ -26,8 +26,13 @@ class AmqpHelper {
         return co.wrap(function*(msg, channel, handler) {
             try {
                 let request = AmqpHelper.bufferToObj(msg.content);
-                let response = yield handler(request.content, channel);
-                AmqpHelper.rpcRespond(response, request, channel);
+                try {
+                    let response = yield handler(request.content, channel);
+                    AmqpHelper.rpcRespond(response, request, channel);
+                } catch (e) {
+                    debug("error", e);
+                    AmqpHelper.rpcRespond({rejected: true, error: e}, request, channel);
+                }
                 channel.ack(msg);
             } catch (error) {
                 debug("error", error);
