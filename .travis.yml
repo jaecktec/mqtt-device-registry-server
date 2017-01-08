@@ -1,0 +1,22 @@
+language: node_js
+node_js:
+  - "node"
+  - "6"
+  - "5"
+  - "4"
+
+script:
+  # run coverate report
+  - npm run coverage
+
+services:
+  - rabbitmq
+  - mongodb
+
+before_script:
+  - mongo mqtt_dr_test --eval 'db.addUser("travis", "test");'
+
+env:
+  - DEBUG=mqtt-device-registry.*
+  - MONGODB_URI=mongodb://travis:test@localhost/mqtt_dr_test
+  - RABBIT_MQ_URI=amqp://guest:guest@localhost/
