@@ -19,4 +19,4 @@ before_script:
 env:
   - MONGODB_URI=mongodb://travis:test@localhost/mqtt_dr_test
   - RABBIT_MQ_URI=amqp://guest:guest@localhost/
-  - DEBUG=mqtt-device-registry.*
+  - DEBUG="mqtt-device-registry.*"
