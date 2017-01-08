@@ -28,7 +28,7 @@ class ValueService {
             channel.consume(ValueServiceQueue.mainQueue, (msg)=> AmqpHelper.handleAck(msg, channel, _this.__onValueMessage), {noAck: false});
 
 
-        })(this, mongoUrl, amqpUrl);
+        })(this, amqpUrl);
     }
 
     stop() {

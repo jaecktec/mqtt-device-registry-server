@@ -48,7 +48,7 @@ describe('ValueServiceTest', function () {
     before(function (done) {
         co(function*() {
             yield DeviceService.start(process.env.MONGODB_URI, process.env.RABBIT_MQ_URI);
-            yield ValueService.start(process.env.MONGODB_URI, process.env.RABBIT_MQ_URI);
+            yield ValueService.start(process.env.RABBIT_MQ_URI);
             connection = yield amqp.connect(process.env.RABBIT_MQ_URI);
             channel = yield connection.createChannel();
         }).then(()=>done()).catch(console.log);
