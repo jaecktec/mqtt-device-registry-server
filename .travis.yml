@@ -17,6 +17,4 @@ before_script:
   - mongo mqtt_dr_test --eval 'db.addUser("travis", "test");'
 
 env:
-  - MONGODB_URI=mongodb://travis:test@localhost/mqtt_dr_test
-  - RABBIT_MQ_URI=amqp://guest:guest@localhost/
-  - DEBUG="mqtt-device-registry.*"
+  - MONGODB_URI=mongodb://travis:test@localhost/mqtt_dr_test RABBIT_MQ_URI=amqp://guest:guest@localhost/ DEBUG="mqtt-device-registry.*"
