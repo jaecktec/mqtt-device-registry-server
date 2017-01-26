@@ -83,11 +83,11 @@ class MqttApp {
             let connection = yield amqp.connect(_amqpUrl);
             _this.channel = yield connection.createChannel();
             yield AmqpExchanges.createExchanges(_this.channel);
-            _this.mqttClient = mqtt.connect(_mqttUrl);
+            _this.mqttClient = mqtt.connect(_mqttUrl, {clientId: 'DeviceRegistry-Gateway-' + Math.random().toString(16).substr(2, 8)});
             _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_REGISTER);
             _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_DEVICE);
             _this.mqttClient.subscribe(MqttGatewayBrokerTopics.TOPIC_UNREGISTER);
-            _this.mqttClient.on('message', (topic, message)=>_this.mqttHandler.handle(topic, message));
+            _this.mqttClient.on('message', (topic, message) => _this.mqttHandler.handle(topic, message));
         })(this, amqpUrl, mqttUrl);
     }
 
