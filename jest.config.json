@@ -1,0 +1,19 @@
+{   
+    "bail": true,
+    "verbose": true,
+    "globals": {
+        "__TS_CONFIG__": "./tsconfig.test.json"
+    },
+    "moduleFileExtensions": [
+        "ts",
+        "js"
+    ],
+    "transform": {
+        "^.+\\.ts?$": "./node_modules/ts-jest/preprocessor.js"
+    },
+    "testMatch": [
+        "**/*.test.ts"
+    ],
+    "testEnvironment": "node",
+    "watchman": true
+}

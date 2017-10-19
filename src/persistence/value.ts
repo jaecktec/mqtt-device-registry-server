@@ -1,0 +1,1 @@
+export interface Value {    nodeId: String;    deviceId: String;    data: any;    timestamp: Date;}

@@ -1,0 +1,1 @@
+export interface Device {    nodeId: String;    id: String;    created: Date;    connected: Date;    disconnected?: Date;}
