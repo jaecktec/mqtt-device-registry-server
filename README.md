@@ -1,15 +1,6 @@
-# mocha-typescript-seed
+MQTT Devie Registry Server
 
-[![Build Status](https://travis-ci.org/pana-cc/mocha-typescript-seed.svg?branch=master)](https://travis-ci.org/pana-cc/mocha-typescript-seed)
+is build as a stateful connection handler for mqtt devices (with the mqtt-device-registr-client library)
 
-A project with mocha-typescript enabled testing.
-To run all tests and produce a test coverage:
-```
-npm test
-```
-
-To run the test along TypeScript with watch:
-```
-npm run watch
-```
-Then you can make incremental changes and the tests will rerun accordingly.
+TODO:
+Build a beautiful UI (have no ideas yet how to do it. Maybe I'll come up with an idea at some point in space and time)
